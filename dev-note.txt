@@ -1,0 +1,96 @@
+## I'm starting to develop a new project, there requirements are as this md file below:
+
+;don't do anything oke, just remember the information to provide me good response when I ask future questions.
+when showing me response, only show code snippets and changes that is new, not regenerate everything for every files.
+
+#region Questions to clarify
+
+Is this the minimal version of clean architecture yet easily scalable?
+I also want to store and get log so that I'm able to trace error and exception when the app is running
+What is the best way to design paging solution, so that in the back-end I have a dynamic base paging api endpoint that can handle paging for every entity (of course except some exceptional cases),give me flow from front-end to back-end.
+the api endpoint has to be flexible in terms of fields data, master-detail data can be fetched or not based on mode param from front-end (fe),
+easily sort data based on multiple field names, search data using  operation with multiple fields combined with search data using OR operation with multiple fields
+
+#endregion
+
+Login with Google diagram: https://www.npmjs.com/package/vue-google-oauth2
+
+** Checklist vấn đề **
+font-size theo rem
+dùng đúng icon
+
+key của file .env phải có tiền tố VITE_, nếu ko value sẽ null
+build fail do tên file trên git là User.ts nhưng trong project lại import user.ts (ở windows ko lỗi, nhưng linux sẽ lỗi, vì linux case-sensitive)
+
+backend prod:
+http://production.eba-nbh3jtv6.ap-southeast-1.elasticbeanstalk.com/api
+
+frontend prod:
+https://main.d3vt4ohfxm0zrb.amplifyapp.com
+
+Base list (for user side - not grid with multiple fields):
+filterin & sortin: pagerequest
+api
+entity
+andle scrollin
+need user logged in or not
+slot for list item
+click on item, show detail page
+
+Base detail:
+id
+entity
+
+database:
+every table has fields:
+id,
+`created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `modified_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_by` int DEFAULT NULL,
+  `modified_by` int DEFAULT NULL,
+  `is_active` bit(1) DEFAULT b'1' COMMENT 'bản ghi này có đang được sử dụng ko. nếu ko đc sử dụng thì ko lấy lên giao diện',
+
+
+  ========= moved from project-summary.md
+  
+## Requirements and Questions:
+
+-   Google Login Combined with JWT Authentication:
+    -   Implement Google login combined with JWT authentication in ASP.NET Web API.
+-   Form Validation with PrimeVue:
+    -   Use PrimeVue components to perform various form validation tasks.
+    -   Ensure fields like `fullName` are filled before allowing input in fields like `email`.
+-   Profile Updating Feature:
+    -   Implement a single API endpoint to update both personal information (e.g., `fullName`, `email`) and files (e.g., images, videos).
+    -   Use multipart form data to handle both text data and file uploads.
+-   Clean Architecture:
+    -   Scaffold a project using Clean Architecture principles.
+    -   Create layers: Presentation, Application, Domain, and Infrastructure.
+    -   Use dependency injection to manage dependencies.
+-   Logging and Error Tracing:
+    -   Store and retrieve logs to trace errors and exceptions when the app is running.
+-   Paging Solution:
+    -   Design a dynamic base paging API endpoint that can handle paging for every entity.
+    -   Ensure the API endpoint is flexible in terms of fields data.
+    -   Allow fetching master-detail data based on a mode parameter from the frontend.
+    -   Enable sorting data based on multiple field names.
+    -   Implement search functionality using AND and OR operations with multiple fields.
+
+## Một số nghiệp vụ hệ thống
+
+### nghiệp vụ nhắc nhở đánh giá:
+
+check nếu thỏa mãn tất cả điều kiện sau:
+ngày kết thúc sự kiện (event_end) nhỏ hơn hoặc bằng hiện tại
+hợp đồng chưa được gửi nhắc nhở (is_remind = 0) (trường is_remind chưa được tạo trong bảng contract, tạo trường này với kiểu bit, mặc định = 0, comment tiếng việt )
+
+gửi thông báo đến mc/client cần đánh giá sự kiện này
+
+update trạng thái hợp đồng thành đã hoàn thành
+update trạng thái gửi thông báo hợp đồng thành đã gửi (is_remind=1).
+
+### nghiệp vụ validate backend:
+
+khi thêm/sửa bất kỳ entity nào, cần check entity đó có thỏa mãn các ràng buộc không. nếu có thì mới cho thực hiện thêm/sửa entity , nếu không thì báo lỗi. ở frontend đã thực hiện validate entity với zod.js, nhưng backend thì chưa validate.
+làm điều này 1 cách tổng quát (base)
+ví dụ: 1 bài post cần có event_start nhỏ hơn event_end, tên sự kiện không rỗng, mức giá từ phải nhỏ hơn hoặc bằng mức giá đến, địa điểm không được rỗng, post_group không được rỗng.
