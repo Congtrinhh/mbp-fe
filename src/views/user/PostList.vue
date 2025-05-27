@@ -62,7 +62,7 @@
 					<div class="post-content">
 						<div class="show-info-item caption">{{ post.caption }}</div>
 						<div class="show-info-item show-desc">
-							<label class="title font-bold">Thông tin chương trình</label>
+							<label class="title">Thông tin chương trình</label>
 							<div class="content">{{ post.eventName }}</div>
 						</div>
 						<div class="show-info-item show-time">
@@ -736,10 +736,11 @@ header.header {
 
 .show-info-item {
 	.title {
-		font-weight: 600;
+		font-weight: 500;
 	}
 }
 .show-info-item.caption {
 	font-size: 1.1rem;
+	font-weight: 500;
 }
 </style>

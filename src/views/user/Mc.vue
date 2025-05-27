@@ -3,9 +3,9 @@
 		<Button
 			icon="pi pi-pencil"
 			class="edit-button"
-			variant="text"
 			raised
 			rounded
+			variant="outlined"
 			v-if="hasEditPermission && editingMode == EditingMode.None && activeTab != TabType.Review"
 			@click="editingMode = EditingMode.Update"
 		/>
