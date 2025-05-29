@@ -17,7 +17,8 @@ const props = withDefaults(defineProps<Props>(), {
 		isMc: false,
 		age: undefined,
 		nickName: "",
-		credit: 0,
+		avgRating: undefined,
+		reviewCount: undefined,
 		gender: Gender.Male,
 		isNewbie: false,
 		workingArea: "",
@@ -47,8 +48,12 @@ const provinces = computed(() => props.user.provinces.map((province: Province) =
 		</div>
 		<div class="m-desc-container">
 			<div class="m-labels-container">
+				<div v-if="props.user.reviewCount" class="rating">
+					<i class="pi pi-star-fill" style="color: #f59e0b"></i>
+					<span class="rating-value">{{ props.user.avgRating }}</span>
+					<span class="review-count">({{ props.user.reviewCount }})</span>
+				</div>
 				<Tag v-if="props.user.isNewbie" value="Mới"></Tag>
-				<Tag :value="props.user.credit"></Tag>
 			</div>
 			<strong class="m-mc-name">{{ props.user.nickName }}</strong>
 			<div class="m-mc-address line-clamp-1">{{ provinces }}</div>
@@ -75,6 +80,31 @@ const provinces = computed(() => props.user.provinces.map((province: Province) =
 		.m-mc-name {
 			font-weight: bold;
 		}
+
+		.rating {
+			display: flex;
+			align-items: baseline;
+			gap: 4px;
+
+			.pi-star-fill {
+				color: #f59e0b;
+			}
+
+			.rating-value {
+				font-weight: 600;
+			}
+
+			.review-count {
+				color: #999;
+			}
+		}
+	}
+
+	.m-labels-container {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 6px;
 	}
 }
 </style>

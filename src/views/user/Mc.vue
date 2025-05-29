@@ -27,8 +27,10 @@
 						></span>
 						<div v-else-if="hasEditPermission" class="verify-identity underline">Xác thực danh tính</div>
 					</div>
-					<div class="credit-point">
-						<!-- <Badge :value="user.credit"></Badge> -->
+					<div class="rating-info" v-if="user.reviewCount">
+						<i class="pi pi-star-fill" style="color: #f59e0b"></i>
+						<span class="rating-value">{{ user.avgRating }}</span>
+						<span class="review-count">({{ user.reviewCount }})</span>
 					</div>
 				</div>
 			</div>
@@ -1230,6 +1232,22 @@ section.top {
 		display: flex;
 		align-items: center;
 		gap: 16px;
+
+		.rating-info {
+			margin-top: 4px;
+			font-size: 1.1rem;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+
+			.rating-value {
+				font-weight: 600;
+			}
+
+			.review-count {
+				color: #999;
+			}
+		}
 
 		.avatar {
 			width: 80px;

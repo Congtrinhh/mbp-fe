@@ -12,7 +12,8 @@ export interface User extends BaseEntity {
 	isMc: boolean;
 	age?: number;
 	nickName: string;
-	credit: number;
+	avgRating?: number;
+	reviewCount?: number;
 	gender: Gender;
 	isNewbie: boolean;
 	workingArea: string;
