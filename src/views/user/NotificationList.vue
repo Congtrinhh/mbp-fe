@@ -8,7 +8,9 @@
 				:class="{ 'notification-item': true, unread: !notification.isRead }"
 				@click="handleNotificationClick(notification)"
 			>
-				<div class="img-parent rounded"><img :src="notification.thumbUrl" alt="notification thumbnail" /></div>
+				<div class="img-parent rounded">
+					<img :src="getNotificationThumbUrl(notification)" alt="notification thumbnail" />
+				</div>
 				<div class="info">
 					<div class="content line-clamp-3">{{ notification.message }}</div>
 					<div class="ago" v-format-date:isRelativeNow="notification.createdAt"></div>
@@ -85,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive, onUnmounted } from "vue";
+import { ref, onMounted, reactive } from "vue";
 import { notificationApi } from "@/apis/notificationApi";
 import { useRouter } from "vue-router";
 import { NotificationType } from "@/enums/notificationType";
@@ -313,6 +315,21 @@ onMounted(() => {
 	fetchNotifications();
 });
 
+//#endregion
+//#region Computed and Methods
+/**
+ * Returns the thumbnail URL for a notification based on its type.
+ * @param notification
+ */
+function getNotificationThumbUrl(notification: Notification): string {
+	switch (notification.type) {
+		case NotificationType.ReviewReminder:
+		case NotificationType.GetOneStarReviewCancelContractReviewReminder:
+			return "src/assets/logo.png";
+		default:
+			return notification.thumbUrl;
+	}
+}
 //#endregion
 </script>
 

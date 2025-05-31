@@ -9,4 +9,6 @@ export enum NotificationType {
 	ReviewReminder = 4,
 	// hợp đồng bị hủy
 	ContractCanceled = 5,
+	// bị nhận đánh giá 1 sao do hủy hợp đồng sát ngày dẫn chương trinh
+	GetOneStarReviewCancelContract = 6,
 }

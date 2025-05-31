@@ -23,8 +23,8 @@ export const useAppStore = defineStore("app", {
 
 			const authStore = useAuthStore();
 			if (authStore.user) {
-				// const unreadCount = await notificationApi.getUnreadCount(authStore.user.id);
-				// this.unreadNotificationCount = unreadCount;
+				const unreadCount = await notificationApi.getUnreadCount(authStore.user.id);
+				this.unreadNotificationCount = unreadCount;
 			}
 		},
 	},

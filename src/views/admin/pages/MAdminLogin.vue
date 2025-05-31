@@ -3,7 +3,7 @@
 	<div class="min-h-screen flex items-center justify-center bg-gray-100">
 		<div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
 			<div class="text-center mb-8">
-				<img src="@/assets/logo.svg" alt="MBP Logo" class="h-12 mx-auto mb-4" />
+				<img src="@/assets/logo.png" alt="MBP Logo" class="h-12 mx-auto mb-4" />
 				<h1 class="text-2xl font-semibold">Admin Login</h1>
 			</div>
 

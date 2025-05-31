@@ -174,13 +174,13 @@ const goToConflictingContract = () => {
 const handleApprove = async () => {
 	try {
 		if (!additionalInfo.value?.senderId) return;
-
+		debugger;
 		const contract: Contract = {
 			id: 0,
 			clientId: additionalInfo.value.senderId,
 			mcId: authStore.user?.id ?? 0,
-			eventStart: String(additionalInfo.value.eventStart),
-			eventEnd: String(additionalInfo.value.eventEnd),
+			eventStart: additionalInfo.value.eventStart,
+			eventEnd: additionalInfo.value.eventEnd,
 			description: additionalInfo.value.note,
 			place: additionalInfo.value.place,
 			eventName: additionalInfo.value.eventName,

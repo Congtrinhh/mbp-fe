@@ -8,7 +8,7 @@
 			</button>
 
 			<!-- MBP Logo -->
-			<img src="@/assets/logo.svg" alt="MBP Logo" class="h-6" />
+			<img src="@/assets/logo.png" alt="MBP Logo" class="h-6" />
 		</div>
 
 		<div class="flex-1"></div>

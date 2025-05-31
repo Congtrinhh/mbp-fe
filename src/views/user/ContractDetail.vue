@@ -99,6 +99,13 @@
 						<div class="value">{{ contract.clientCancelReason }}</div>
 					</div>
 				</template>
+				<Message
+					v-if="contract?.status === ContractStatus.InEffect && isWithin24Hours"
+					severity="warn"
+					:closable="false"
+				>
+					Sự kiện sẽ được diễn ra trong vòng 1 ngày nữa. Nếu bạn hủy sự kiện, bạn sẽ bị đánh giá 1 sao
+				</Message>
 				<!-- buttons -->
 				<div v-if="contract?.status === ContractStatus.InEffect" class="buttons">
 					<Button label="Hủy hợp đồng" severity="danger" @click="onCancelContract" />
@@ -124,6 +131,18 @@ const authStore = useAuthStore();
 
 const isMc = computed(() => authStore.user?.isMc == "true");
 
+/**
+ * Checks if the event is started within 24 hours from now.
+ * For showing a warning message in case user want to cancel it
+ */
+const isWithin24Hours = computed(() => {
+	if (!contract.value?.eventStart) return false;
+	const eventStart = new Date(contract.value.eventStart);
+	const now = new Date();
+	const hoursUntilEvent = (eventStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+	return hoursUntilEvent <= 24;
+});
+
 const fetchContract = async (id: number) => {
 	try {
 		contract.value = await contractApi.getById(id);
@@ -135,10 +154,10 @@ const fetchContract = async (id: number) => {
 function getCanceledContract(original: Contract, isMc: boolean): Contract {
 	const canceled = { ...original, status: ContractStatus.Canceled };
 	if (isMc) {
-		canceled.mcCancelDate = new Date().toISOString();
+		canceled.mcCancelDate = new Date();
 		canceled.mcCancelReason = "Hết nhu cầu";
 	} else {
-		canceled.clientCancelDate = new Date().toISOString();
+		canceled.clientCancelDate = new Date();
 		canceled.clientCancelReason = "Hết nhu cầu";
 	}
 	return canceled;

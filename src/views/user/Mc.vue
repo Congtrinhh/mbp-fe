@@ -3,9 +3,9 @@
 		<Button
 			icon="pi pi-pencil"
 			class="edit-button"
+			variant="text"
 			raised
 			rounded
-			variant="outlined"
 			v-if="hasEditPermission && editingMode == EditingMode.None && activeTab != TabType.Review"
 			@click="editingMode = EditingMode.Update"
 		/>
@@ -25,7 +25,6 @@
 							class="pi pi-verified"
 							style="font-size: 1.5rem; color: green"
 						></span>
-						<div v-else-if="hasEditPermission" class="verify-identity underline">Xác thực danh tính</div>
 					</div>
 					<div class="rating-info" v-if="user.reviewCount">
 						<i class="pi pi-star-fill" style="color: #f59e0b"></i>
@@ -34,20 +33,27 @@
 					</div>
 				</div>
 			</div>
-			<div v-if="!isLoggedUser" class="buttons">
+			<div class="buttons">
 				<Button
 					type="button"
 					label="Gửi offer"
 					severity="primary"
 					@click="sendOffer"
-					v-if="user.isMc && authStore.user?.isMc == 'false'"
+					v-if="!isLoggedUser && user.isMc && authStore.user?.isMc == 'false'"
 				></Button>
 				<Button
 					type="button"
 					label="Nhắn tin"
 					severity="contrast"
 					variant="outlined"
-					v-if="authStore.user"
+					v-if="!isLoggedUser && authStore.user"
+				></Button>
+				<Button
+					type="button"
+					label="Xác thực danh tính"
+					severity="primary"
+					@click="toVerifyIdentityView"
+					v-if="hasEditPermission && !user.isVerified"
 				></Button>
 			</div>
 		</section>
@@ -581,9 +587,9 @@
 									</template>
 								</Card>
 							</div>
-							<div v-if="!hasMoreReviews" class="no-more-reviews">
+							<!-- <div v-if="!hasMoreReviews" class="no-more-reviews">
 								<p>Không có đánh giá</p>
-							</div>
+							</div> -->
 						</div>
 					</TabPanel>
 				</TabPanels>
@@ -682,7 +688,7 @@ import { type User } from "@/entities/user/user";
 import { getGenderDataSource, getGenderText } from "@/enums/gender";
 import { EditingMode } from "@/enums/editingMode";
 import { userApi } from "@/apis/userApi";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useHostingStyleStore } from "@/stores/hostingStyleStore";
 import { useProvinceStore } from "@/stores/provinceStore";
 import { useMcTypeStore } from "@/stores/mcTypeStore";
@@ -710,6 +716,7 @@ import { mcReviewClientApi } from "@/apis/mcReviewClientApi";
 
 const toast = useToast();
 const route = useRoute();
+const router = useRouter();
 const userId = Number(route.params.id);
 const routeTabIndex = Number(route.params.tabIndex);
 // user của profile hiện tại
@@ -1125,7 +1132,7 @@ const onOfferFormSubmit = async (formInfo: any) => {
 		const notification: Notification = {
 			id: 0,
 			userId: userId,
-			message: "You have received a new offer",
+			message: "Bạn đã nhận được một offer mới",
 			additionalInfo: JSON.stringify(additionalInfo),
 			type: NotificationType.SendOffer,
 			thumbUrl: authStore.user?.avatarUrl, // Add thumbUrl property
@@ -1176,7 +1183,9 @@ const avatarMenuItems = [
 ];
 
 const showAvatarMenu = (event: any) => {
-	avatarMenu.value?.toggle(event);
+	if (hasEditPermission.value) {
+		avatarMenu.value?.toggle(event);
+	}
 };
 
 const handleUpload = () => {
@@ -1217,6 +1226,15 @@ const openVideoViewer = (index: number) => {
 
 const isMcReviewClient = (review: any): boolean => {
 	return "paymentPunctualPoint" in review;
+};
+
+/**
+ * Navigate to the identity verification view
+ */
+const toVerifyIdentityView = () => {
+	router.push({
+		name: "user-identity-verification",
+	});
 };
 </script>
 
@@ -1490,7 +1508,7 @@ section.top {
 
 	.client-info {
 		.client-name {
-			font-weight: bold;
+			font-weight: 500;
 		}
 
 		.review-date {

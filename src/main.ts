@@ -13,6 +13,21 @@ import "primeicons/primeicons.css";
 import ToastService from "primevue/toastservice";
 import { definePreset } from "@primevue/themes";
 import { useAppStore } from "./stores/appStore";
+import { vietnamese } from "./config/localeConfig";
+
+// Import and configure Day.js
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+import "dayjs/locale/vi";
+
+// Configure Day.js plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(localizedFormat);
+dayjs.locale("vi");
+dayjs.tz.setDefault("Asia/Ho_Chi_Minh");
 
 import ConfirmationService from "primevue/confirmationservice";
 import { useAuthStore } from "./stores/authStore";
@@ -46,6 +61,7 @@ app.use(PrimeVue, {
 	theme: {
 		preset: MyPreset,
 	},
+	locale: vietnamese,
 });
 app.use(ToastService);
 app.use(GoogleSignInPlugin, {

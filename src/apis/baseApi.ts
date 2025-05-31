@@ -1,7 +1,8 @@
 import type { PagedRequest } from "@/entities/user/paging/pagedRequest";
 import type { PagedResponse } from "@/entities/user/paging/pagedResponse";
 import axios, { type AxiosInstance, type AxiosResponse } from "axios";
-import { showLoading, hideLoading } from "@/composables/useLoading"; // Import loading utilities
+import { showLoading, hideLoading } from "@/composables/useLoading";
+import { dateUtils } from "@/utils/dateUtils";
 
 class BaseApi<T> {
 	public static axiosInstance: AxiosInstance;
@@ -25,9 +26,27 @@ class BaseApi<T> {
 			BaseApi.axiosInstance = axios.create({
 				baseURL: this.baseUrl,
 			});
+
+			// Add request interceptor to convert dates to UTC
+			BaseApi.axiosInstance.interceptors.request.use((config) => {
+				if (config.data) {
+					config.data = dateUtils.processForApi(config.data);
+				}
+				if (config.params) {
+					config.params = dateUtils.processForApi(config.params);
+				}
+				return config;
+			});
+
+			// Add response interceptor to convert UTC dates to local time
+			BaseApi.axiosInstance.interceptors.response.use((response) => {
+				if (response.data) {
+					response.data = dateUtils.processFromApi(response.data);
+				}
+				return response;
+			});
 		}
 	}
-
 	/**
 	 * Used to make singleton instances of the BaseApi class.
 	 * Returns an instance of `BaseApi` for the specified `baseEndpoint`.
