@@ -750,9 +750,9 @@ const mcFormResolver = zodResolver(
 const guestFormResolver = zodResolver(
 	z.object({
 		fullName: z.string().min(1, { message: "Không được bỏ trống" }),
-		description: z.string().optional(),
-		facebook: z.string().max(255, { message: "Không được vượt quá 255 ký tự" }).optional(),
-		zalo: z.string().max(255, { message: "Không được vượt quá 255 ký tự" }).optional(),
+		description: z.string().nullable().optional(),
+		facebook: z.string().max(255, { message: "Không được vượt quá 255 ký tự" }).optional().nullable(),
+		zalo: z.string().max(255, { message: "Không được vượt quá 255 ký tự" }).optional().nullable(),
 	})
 );
 

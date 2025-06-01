@@ -84,7 +84,7 @@
 					</div>
 					<div v-if="contract.mcCancelDate" class="info-item">
 						<label>Hủy ngày:</label>
-						<div class="value">{{ contract.mcCancelDate }}</div>
+						<div class="value" v-format-date="contract.mcCancelDate"></div>
 					</div>
 					<div v-if="contract.mcCancelReason" class="info-item">
 						<label>Lý do:</label>
@@ -92,7 +92,7 @@
 					</div>
 					<div v-if="contract.clientCancelDate" class="info-item">
 						<label>Hủy ngày:</label>
-						<div class="value">{{ contract.clientCancelDate }}</div>
+						<div class="value" v-format-date="contract.clientCancelDate"></div>
 					</div>
 					<div v-if="contract.clientCancelReason" class="info-item">
 						<label>Lý do:</label>

@@ -1,5 +1,7 @@
 <template>
 	<main class="main-container background-1">
+		<h1 class="title">Chào mừng bạn đến với nền tảng booking MC - MBP</h1>
+		<p class="subtitle">Vui lòng dùng tài khoản Google để đăng nhập/ đăng ký</p>
 		<div class="login-with-google-wrapper">
 			<GoogleSignInButton @success="handleLoginSuccess" @error="handleLoginError"></GoogleSignInButton>
 		</div>
@@ -67,8 +69,26 @@ const handleLoginError = () => {
 <style scoped lang="scss">
 .main-container {
 	display: flex;
-	justify-content: center;
 	align-items: center;
 	height: 100vh;
+	flex-direction: column;
+	padding: 0 24px;
+	.title {
+		font-size: 3rem;
+		font-weight: bold;
+		margin-top: 100px;
+		text-align: center;
+	}
+
+	.subtitle {
+		font-size: 1.2rem;
+		margin-top: 20px;
+		text-align: center;
+		font-weight: 500;
+		color: #000;
+	}
+	.login-with-google-wrapper {
+		margin-top: 32px;
+	}
 }
 </style>

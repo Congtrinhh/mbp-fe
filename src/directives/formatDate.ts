@@ -14,7 +14,7 @@ const formatDate = (el: HTMLElement, binding: DirectiveBinding) => {
 	if (isRelativeNow) {
 		el.textContent = formatDistanceToNow(new Date(dateValue), { addSuffix: true, locale: vi });
 	} else {
-		el.textContent = format(new Date(dateValue), "dd/MM/yyyy HH:mm:ss", { locale: vi });
+		el.textContent = format(new Date(dateValue), "dd/MM/yyyy HH:mm", { locale: vi });
 	}
 };
 

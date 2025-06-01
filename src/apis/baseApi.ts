@@ -27,24 +27,24 @@ class BaseApi<T> {
 				baseURL: this.baseUrl,
 			});
 
-			// Add request interceptor to convert dates to UTC
-			BaseApi.axiosInstance.interceptors.request.use((config) => {
-				if (config.data) {
-					config.data = dateUtils.processForApi(config.data);
-				}
-				if (config.params) {
-					config.params = dateUtils.processForApi(config.params);
-				}
-				return config;
-			});
+			// // Add request interceptor to convert dates to UTC
+			// BaseApi.axiosInstance.interceptors.request.use((config) => {
+			// 	if (config.data) {
+			// 		config.data = dateUtils.processForApi(config.data);
+			// 	}
+			// 	if (config.params) {
+			// 		config.params = dateUtils.processForApi(config.params);
+			// 	}
+			// 	return config;
+			// });
 
-			// Add response interceptor to convert UTC dates to local time
-			BaseApi.axiosInstance.interceptors.response.use((response) => {
-				if (response.data) {
-					response.data = dateUtils.processFromApi(response.data);
-				}
-				return response;
-			});
+			// // Add response interceptor to convert UTC dates to local time
+			// BaseApi.axiosInstance.interceptors.response.use((response) => {
+			// 	if (response.data) {
+			// 		response.data = dateUtils.processFromApi(response.data);
+			// 	}
+			// 	return response;
+			// });
 		}
 	}
 	/**
