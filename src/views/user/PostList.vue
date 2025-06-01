@@ -115,10 +115,11 @@
 							></i>
 							<span class="text">Thích</span>
 						</div>
-						<div class="reaction-button chat-button">
+						<!-- nút nhắn tin -->
+						<!-- <div class="reaction-button chat-button">
 							<i class="icon pi pi-comment"></i>
 							<span class="text">Nhắn tin</span>
-						</div>
+						</div> -->
 					</div>
 				</template>
 			</Card>

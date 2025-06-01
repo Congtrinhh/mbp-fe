@@ -190,7 +190,7 @@ const handleNotificationClick = async (notification: Notification) => {
 		toast.add({
 			severity: "info",
 			summary: "Thông báo",
-			detail: "Thao tác không khả dụng",
+			detail: "Thao tác không còn hiệu lực",
 			life: 3000,
 		});
 		return;

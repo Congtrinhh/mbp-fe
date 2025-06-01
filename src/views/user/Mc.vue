@@ -41,13 +41,13 @@
 					@click="sendOffer"
 					v-if="!isLoggedUser && user.isMc && authStore.user?.isMc == 'false'"
 				></Button>
-				<Button
+				<!-- <Button
 					type="button"
 					label="Nhắn tin"
 					severity="contrast"
 					variant="outlined"
 					v-if="!isLoggedUser && authStore.user"
-				></Button>
+				></Button> -->
 				<Button
 					type="button"
 					label="Xác thực danh tính"
