@@ -862,13 +862,11 @@ const fetchImages = async () => {
 const onAddImageClick = () => {
 	const input = document.createElement("input");
 	input.type = "file";
-	input.accept = ".jpg,.jpeg,.png";
+	input.accept = "image/*";
 	input.onchange = async (event: Event) => {
 		const target = event.target as HTMLInputElement;
 		if (target.files && target.files.length > 0) {
 			try {
-				alert("Image change event fired!"); // Add this line for testing
-
 				const file = target.files[0];
 				const newMedia: Media = {
 					id: 0, // Assuming the backend will generate the ID
@@ -891,7 +889,6 @@ const onAddImageClick = () => {
 				images.value.sort((a, b) => b.sortOrder - a.sortOrder);
 			} catch (error) {
 				console.error("Error fetching images:", error);
-				alert(`error on event change: ${error}`); // Add this line for testing
 			}
 		}
 	};
