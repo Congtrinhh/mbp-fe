@@ -866,26 +866,33 @@ const onAddImageClick = () => {
 	input.onchange = async (event: Event) => {
 		const target = event.target as HTMLInputElement;
 		if (target.files && target.files.length > 0) {
-			const file = target.files[0];
-			const newMedia: Media = {
-				id: 0, // Assuming the backend will generate the ID
-				userId: userId,
-				type: MediaType.Image,
-				url: "",
-				sortOrder: images.value.length + 1,
-				file: file, // Include the file to upload
-			};
+			try {
+				alert("Image change event fired!"); // Add this line for testing
 
-			const response = await mediaApi.upload(newMedia);
+				const file = target.files[0];
+				const newMedia: Media = {
+					id: 0, // Assuming the backend will generate the ID
+					userId: userId,
+					type: MediaType.Image,
+					url: "",
+					sortOrder: images.value.length + 1,
+					file: file, // Include the file to upload
+				};
 
-			const updatedMedias = await mediaApi.getMediasByUserId(userId, MediaType.Image);
-			updatedMedias.forEach((item: Media) => {
-				if (images.value.every((i) => i.id != item.id)) {
-					images.value.push(item);
-				}
-			});
-			//sort images by sortorder descending
-			images.value.sort((a, b) => b.sortOrder - a.sortOrder);
+				const response = await mediaApi.upload(newMedia);
+
+				const updatedMedias = await mediaApi.getMediasByUserId(userId, MediaType.Image);
+				updatedMedias.forEach((item: Media) => {
+					if (images.value.every((i) => i.id != item.id)) {
+						images.value.push(item);
+					}
+				});
+				//sort images by sortorder descending
+				images.value.sort((a, b) => b.sortOrder - a.sortOrder);
+			} catch (error) {
+				console.error("Error fetching images:", error);
+				alert(`error on event change: ${error}`); // Add this line for testing
+			}
 		}
 	};
 	input.click();

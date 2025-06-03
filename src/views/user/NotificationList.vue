@@ -324,7 +324,7 @@ onMounted(() => {
 function getNotificationThumbUrl(notification: Notification): string {
 	switch (notification.type) {
 		case NotificationType.ReviewReminder:
-		case NotificationType.GetOneStarReviewCancelContractReviewReminder:
+		case NotificationType.GetOneStarReviewCancelContract:
 			return "src/assets/logo.png";
 		default:
 			return notification.thumbUrl;

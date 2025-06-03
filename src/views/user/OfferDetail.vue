@@ -174,7 +174,7 @@ const goToConflictingContract = () => {
 const handleApprove = async () => {
 	try {
 		if (!additionalInfo.value?.senderId) return;
-		debugger;
+
 		const contract: Contract = {
 			id: 0,
 			clientId: additionalInfo.value.senderId,
