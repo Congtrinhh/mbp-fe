@@ -946,8 +946,11 @@ const onAddVideoClick = () => {
 	input.type = "file";
 	input.accept = "video/*";
 	input.onchange = async (event: Event) => {
+		alert("sk upload video ");
 		const target = event.target as HTMLInputElement;
 		if (target.files && target.files.length > 0) {
+			alert("co file video ");
+
 			const file = target.files[0];
 			const newMedia: Media = {
 				id: 0, // Assuming the backend will generate the ID
