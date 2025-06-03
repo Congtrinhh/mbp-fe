@@ -862,7 +862,7 @@ const fetchImages = async () => {
 const onAddImageClick = () => {
 	const input = document.createElement("input");
 	input.type = "file";
-	input.accept = "image/*";
+	input.accept = "image/*,image/heic,image/heif";
 	input.onchange = async (event: Event) => {
 		const target = event.target as HTMLInputElement;
 		if (target.files && target.files.length > 0) {
@@ -944,13 +944,10 @@ const fetchVideos = async () => {
 const onAddVideoClick = () => {
 	const input = document.createElement("input");
 	input.type = "file";
-	input.accept = "video/*";
+	input.accept = "video/*,video/quicktime";
 	input.onchange = async (event: Event) => {
-		alert("sk upload video ");
 		const target = event.target as HTMLInputElement;
 		if (target.files && target.files.length > 0) {
-			alert("co file video ");
-
 			const file = target.files[0];
 			const newMedia: Media = {
 				id: 0, // Assuming the backend will generate the ID
