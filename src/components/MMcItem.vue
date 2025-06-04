@@ -71,6 +71,12 @@ const provinces = computed(() => props.user.provinces.map((province: Province) =
 	overflow: hidden;
 	background: #fff;
 
+	.m-img-container {
+		img {
+			min-width: 100%;
+		}
+	}
+
 	.m-desc-container {
 		padding: 10px 8px;
 		display: flex;

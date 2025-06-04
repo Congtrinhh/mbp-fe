@@ -341,7 +341,7 @@ const redirectToMC = (id: number) => {
 
 	.search-input {
 		flex: 1;
-		margin: 0 24px;
+		margin: 0 18px 0 30px;
 		padding: 8px;
 		border: 1px solid #ccc;
 		border-radius: 4px;
@@ -349,6 +349,10 @@ const redirectToMC = (id: number) => {
 
 	.filter-button {
 		cursor: pointer;
+		flex-shrink: 0;
+		width: 40px;
+		display: flex;
+		justify-content: center;
 	}
 }
 .reset-button {

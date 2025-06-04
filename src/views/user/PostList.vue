@@ -687,6 +687,10 @@ header.header {
 			align-items: center;
 			gap: 8px;
 			cursor: pointer;
+
+			.icon {
+				font-size: 1.2rem;
+			}
 		}
 
 		.reaction-button.like-button.liked {

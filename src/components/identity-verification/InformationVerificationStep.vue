@@ -31,7 +31,13 @@
 
 					<div class="info-field">
 						<label>Ngày sinh</label>
-						<Calendar v-model="editableInfo.dob" class="w-full" :disabled="!isEditing" :showIcon="true" />
+						<DatePicker
+							v-model="editableInfo.dob"
+							class="w-full"
+							:disabled="!isEditing"
+							:showIcon="true"
+							dateFormat="dd/mm/yy"
+						/>
 					</div>
 
 					<div class="info-field">
@@ -82,7 +88,8 @@
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div class="info-field">
 							<label>Ngày cấp</label>
-							<Calendar
+							<DatePicker
+								dateFormat="dd/mm/yy"
 								v-model="editableInfo.issueDate"
 								class="w-full"
 								:disabled="!isEditing"
@@ -97,7 +104,8 @@
 
 						<div class="info-field">
 							<label>Ngày hết hạn</label>
-							<Calendar
+							<DatePicker
+								dateFormat="dd/mm/yy"
 								v-model="editableInfo.doe"
 								class="w-full"
 								:disabled="!isEditing"
@@ -128,9 +136,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Calendar from "primevue/calendar";
 import type { IdInfo } from "@/entities/idVerification";
 
 const props = defineProps<{
@@ -233,9 +238,5 @@ onMounted(() => {
 	background: #f3f4f6;
 	color: #374151;
 	opacity: 1;
-}
-
-:deep(.p-calendar) {
-	width: 100%;
 }
 </style>

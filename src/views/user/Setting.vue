@@ -7,7 +7,7 @@
 			</div>
 			<div class="name">{{ user?.isMc == "true" ? user?.nickName : user?.fullName }}</div>
 		</div>
-		<div class="login-button underline" v-else>
+		<div class="login-button" v-else>
 			<button @click="redirectToLogin">Đăng nhập</button>
 		</div>
 

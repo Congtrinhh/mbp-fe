@@ -5,7 +5,11 @@
 				<div class="info-item items-center">
 					<label>Khách hàng:</label>
 					<div class="value">
-						<Avatar :image="contract.client?.avatarUrl" shape="circle" />
+						<Avatar
+							:image="contract.client?.avatarUrl"
+							shape="circle"
+							@click="redirectToProfile(contract.client?.id)"
+						/>
 						<span class="font-medium p-2">{{
 							contract.client?.nickName || contract.client?.fullName
 						}}</span>
@@ -14,7 +18,11 @@
 				<div class="info-item items-center">
 					<label>MC:</label>
 					<div class="value">
-						<Avatar :image="contract.mc?.avatarUrl" shape="circle" />
+						<Avatar
+							:image="contract.mc?.avatarUrl"
+							shape="circle"
+							@click="redirectToProfile(contract.mc?.id)"
+						/>
 						<span class="font-medium p-2">{{ contract.mc?.nickName || contract.mc?.fullName }}</span>
 					</div>
 				</div>
@@ -123,11 +131,13 @@ import type { Contract } from "@/entities/contract";
 import { ContractStatus, getContractStatusText } from "@/enums/contractStatus";
 import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "primevue/usetoast";
+import { useRedirect } from "@/composables/useRedirect";
 
 const toast = useToast();
 const route = useRoute();
 const contract = ref<Contract | null>(null);
 const authStore = useAuthStore();
+const { redirectToProfile } = useRedirect();
 
 const isMc = computed(() => authStore.user?.isMc == "true");
 
@@ -155,10 +165,10 @@ function getCanceledContract(original: Contract, isMc: boolean): Contract {
 	const canceled = { ...original, status: ContractStatus.Canceled };
 	if (isMc) {
 		canceled.mcCancelDate = new Date();
-		canceled.mcCancelReason = "Hết nhu cầu";
+		canceled.mcCancelReason = "Tôi không thể dẫn sự kiện này";
 	} else {
 		canceled.clientCancelDate = new Date();
-		canceled.clientCancelReason = "Hết nhu cầu";
+		canceled.clientCancelReason = "Tôi không còn nhu cầu cho sự kiện này";
 	}
 	return canceled;
 }

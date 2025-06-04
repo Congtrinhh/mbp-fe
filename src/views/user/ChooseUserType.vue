@@ -88,7 +88,7 @@ const submitUserType = async () => {
 	display: flex;
 	flex-direction: column;
 	padding: 24px;
-	padding-top: 37vh;
+	padding-top: 34vh;
 }
 .title {
 	text-align: center;
@@ -117,6 +117,7 @@ const submitUserType = async () => {
 	display: flex;
 	justify-content: flex-end;
 	gap: 16px;
+	margin-bottom: 30px;
 }
 .newbie-section {
 	margin-top: 24px;
