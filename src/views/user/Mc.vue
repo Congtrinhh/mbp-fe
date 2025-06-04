@@ -1196,7 +1196,6 @@ const handleUpload = () => {
 	const input = document.createElement("input");
 	input.type = "file";
 	input.accept = "image/*";
-	input.capture = "camera"; // This attribute allows the use of the camera on mobile devices
 	input.onchange = async (event) => {
 		const target = event.target as HTMLInputElement;
 		if (target.files && target.files.length > 0) {
