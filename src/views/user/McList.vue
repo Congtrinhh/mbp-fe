@@ -13,7 +13,6 @@
 				:class="[hasFilter ? 'pi-filter-fill' : 'pi-filter']"
 				@click="showFilterDialog"
 			></div>
-			<div class="login-button underline" @click="handleLoginClick" v-if="!authStore.user">Đăng nhập</div>
 		</header>
 
 		<div class="row gy-3">
@@ -362,10 +361,5 @@ const redirectToMC = (id: number) => {
 .age-slider {
 	width: 70%;
 	flex: 1;
-}
-
-.login-button {
-	margin-left: 12px;
-	flex-shrink: 0;
 }
 </style>

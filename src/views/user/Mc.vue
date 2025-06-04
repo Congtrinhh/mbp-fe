@@ -216,7 +216,7 @@
 
 								<FormField name="zalo" class="flex flex-col gap-1" v-slot="$field">
 									<label for="zalo" class="form-label">Zalo</label>
-									<InputNumber type="text" placeholder="Nhập số zalo" />
+									<InputNumber type="text" placeholder="Nhập số zalo" :useGrouping="false" />
 									<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
 										$field.error?.message
 									}}</Message>
@@ -294,7 +294,7 @@
 
 								<FormField name="zalo" class="flex flex-col gap-1" v-slot="$field">
 									<label for="zalo" class="form-label">Zalo</label>
-									<InputNumber type="text" placeholder="Nhập số zalo" />
+									<InputNumber type="text" placeholder="Nhập số zalo" :useGrouping="false" />
 									<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
 										$field.error?.message
 									}}</Message>
@@ -742,7 +742,8 @@ const mcFormResolver = zodResolver(
 		provinces: z.array(z.any()).min(1, { message: "Cần chọn ít nhất 1 giá trị" }),
 		hostingStyles: z.array(z.any()).min(1, { message: "Cần chọn ít nhất 1 giá trị" }),
 		facebook: z.string().max(255, { message: "Không được vượt quá 255 ký tự" }).optional().nullable(),
-		zalo: z.string().max(12, { message: "Không được vượt quá 255 ký tự" }).optional().nullable(),
+		// zalo: z.string().max(12, { message: "Không được vượt quá 255 ký tự" }).optional().nullable(),
+		zalo: z.any().nullable().optional(),
 		isNewbie: z.boolean().nullable(),
 	})
 );
@@ -752,7 +753,8 @@ const guestFormResolver = zodResolver(
 		fullName: z.string().min(1, { message: "Không được bỏ trống" }),
 		description: z.string().nullable().optional(),
 		facebook: z.string().max(255, { message: "Không được vượt quá 255 ký tự" }).optional().nullable(),
-		zalo: z.string().max(12, { message: "Không được vượt quá 255 ký tự" }).optional().nullable(),
+		// zalo: z.string().max(12, { message: "Không được vượt quá 255 ký tự" }).optional().nullable(),
+		zalo: z.any().nullable().optional(),
 	})
 );
 

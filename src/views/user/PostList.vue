@@ -628,6 +628,7 @@ header.header {
 	.login-to-post-button {
 		text-decoration: underline;
 		cursor: pointer;
+		font-weight: 500;
 	}
 }
 
