@@ -216,7 +216,7 @@
 
 								<FormField name="zalo" class="flex flex-col gap-1" v-slot="$field">
 									<label for="zalo" class="form-label">Zalo</label>
-									<InputNumber type="text" placeholder="Nhập số zalo" :useGrouping="false" />
+									<InputText type="number" placeholder="Nhập số zalo" />
 									<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
 										$field.error?.message
 									}}</Message>
@@ -294,7 +294,7 @@
 
 								<FormField name="zalo" class="flex flex-col gap-1" v-slot="$field">
 									<label for="zalo" class="form-label">Zalo</label>
-									<InputNumber type="text" placeholder="Nhập số zalo" :useGrouping="false" />
+									<InputText type="number" placeholder="Nhập số zalo" />
 									<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
 										$field.error?.message
 									}}</Message>

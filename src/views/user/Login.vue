@@ -73,8 +73,9 @@ const handleLoginError = () => {
 	height: 100vh;
 	flex-direction: column;
 	padding: 0 24px;
+
 	.title {
-		font-size: 3rem;
+		font-size: 2.5rem;
 		font-weight: bold;
 		margin-top: 100px;
 		text-align: center;

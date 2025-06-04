@@ -27,6 +27,7 @@ declare module 'vue' {
     Image: typeof import('primevue/image')['default']
     InformationVerificationStep: typeof import('./src/components/identity-verification/InformationVerificationStep.vue')['default']
     InputIcon: typeof import('primevue/inputicon')['default']
+    InputMask: typeof import('primevue/inputmask')['default']
     InputNumber: typeof import('primevue/inputnumber')['default']
     InputText: typeof import('primevue/inputtext')['default']
     MBaseForm: typeof import('./src/components/admin/MBaseForm.vue')['default']
