@@ -24,8 +24,9 @@ export const useAuthStore = defineStore("auth", {
 
 			BaseApi.axiosInstance.interceptors.request.use(
 				(config) => {
-					if (token) {
-						config.headers.Authorization = `Bearer ${token}`;
+					const authStore = useAuthStore();
+					if (authStore?.token) {
+						config.headers.Authorization = `Bearer ${authStore.token}`;
 					}
 					return config;
 				},
@@ -50,7 +51,10 @@ export const useAuthStore = defineStore("auth", {
 
 				BaseApi.axiosInstance.interceptors.request.use(
 					(config) => {
-						config.headers.Authorization = `Bearer ${token}`;
+						const authStore = useAuthStore();
+						if (authStore?.token) {
+							config.headers.Authorization = `Bearer ${authStore.token}`;
+						}
 						return config;
 					},
 					(error) => {
