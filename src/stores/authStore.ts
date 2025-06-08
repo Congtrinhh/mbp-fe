@@ -73,7 +73,7 @@ export const useAuthStore = defineStore("auth", {
 				.withUrl(`${import.meta.env.VITE_API_ROOT_HOST_URL}/notificationHub?userId=${this.user?.id}`, {
 					skipNegotiation: true,
 					transport: signalR.HttpTransportType.WebSockets,
-					accessTokenFactory: () => this.token,
+					accessTokenFactory: () => this.token || "",
 				})
 				.build();
 

@@ -114,7 +114,7 @@
 				<div class="flex justify-end gap-2">
 					<Button
 						type="button"
-						label="Reset"
+						label="Đặt lại"
 						severity="secondary"
 						@click="resetFilter"
 						class="reset-button"

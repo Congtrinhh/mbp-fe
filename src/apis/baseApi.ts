@@ -2,60 +2,24 @@ import type { PagedRequest } from "@/entities/user/paging/pagedRequest";
 import type { PagedResponse } from "@/entities/user/paging/pagedResponse";
 import axios, { type AxiosInstance, type AxiosResponse } from "axios";
 import { showLoading, hideLoading } from "@/composables/useLoading";
-import { dateUtils } from "@/utils/dateUtils";
+// import { dateUtils } from '@/utils/dateUtils'; // Uncomment if date processing is required
 
 class BaseApi<T> {
-	public static axiosInstance: AxiosInstance;
+	public static axiosInstance: AxiosInstance = axios.create({
+		baseURL: import.meta.env.VITE_API_BASE_URL,
+	});
 	protected baseUrl: string;
-	private defaultBaseUrl = import.meta.env.VITE_API_BASE_URL;
-	// private defaultBaseUrl = "http://production.eba-nbh3jtv6.ap-southeast-1.elasticbeanstalk.com/api";
 	protected baseEndpoint = "";
 
 	private static instances: { [key: string]: BaseApi<any> } = {};
 
 	constructor(baseEndpoint: string, baseUrl?: string) {
 		this.baseEndpoint = baseEndpoint;
-
-		if (baseUrl) {
-			this.baseUrl = baseUrl;
-		} else {
-			this.baseUrl = this.defaultBaseUrl;
-		}
-
-		if (!BaseApi.axiosInstance) {
-			BaseApi.axiosInstance = axios.create({
-				baseURL: this.baseUrl,
-			});
-
-			// // Add request interceptor to convert dates to UTC
-			// BaseApi.axiosInstance.interceptors.request.use((config) => {
-			// 	if (config.data) {
-			// 		config.data = dateUtils.processForApi(config.data);
-			// 	}
-			// 	if (config.params) {
-			// 		config.params = dateUtils.processForApi(config.params);
-			// 	}
-			// 	return config;
-			// });
-
-			// // Add response interceptor to convert UTC dates to local time
-			// BaseApi.axiosInstance.interceptors.response.use((response) => {
-			// 	if (response.data) {
-			// 		response.data = dateUtils.processFromApi(response.data);
-			// 	}
-			// 	return response;
-			// });
-		}
+		this.baseUrl = baseUrl || import.meta.env.VITE_API_BASE_URL;
 	}
+
 	/**
-	 * Used to make singleton instances of the BaseApi class.
-	 * Returns an instance of `BaseApi` for the specified `baseEndpoint`.
-	 * If an instance does not already exist, it creates a new one.
-	 *
-	 * @template T - The type of the data that the API will handle.
-	 * @param {string} baseEndpoint - The endpoint for which the `BaseApi` instance is created.
-	 * @param {string} [baseUrl] - An optional base URL for the API.
-	 * @returns {BaseApi<T>} The `BaseApi` instance for the specified `baseEndpoint`.
+	 * Returns a singleton instance of BaseApi for the given endpoint.
 	 */
 	public static getInstance<T>(baseEndpoint: string, baseUrl?: string): BaseApi<T> {
 		if (!BaseApi.instances[baseEndpoint]) {
