@@ -8,19 +8,6 @@
 			:initialValues="formInitialValues"
 			@submit="onFormSubmit"
 		>
-			<div class="top">
-				<Button
-					type="button"
-					severity="secondary"
-					v-if="editingMode == EditingMode.Update"
-					@click="cancelEditGeneralInfo"
-					width="80px"
-				>
-					Hủy
-				</Button>
-				<Button v-if="editingMode == EditingMode.Update" type="submit"> Lưu </Button>
-			</div>
-
 			<FormField name="nickName" class="flex flex-col gap-1" v-slot="$field">
 				<label for="nickName" class="form-label">Nghệ danh</label>
 				<InputText type="text" placeholder="Nhập nghệ danh" />
@@ -138,17 +125,8 @@
 					$field.error?.message
 				}}</Message>
 			</FormField>
-		</Form>
 
-		<!-- Guest booking MC editing form -->
-		<Form
-			v-if="editingMode == EditingMode.Update && !user.isMc"
-			class="flex flex-col gap-4 w-full sm:w-56"
-			:resolver="guestFormResolver"
-			:initialValues="props.formInitialValues"
-			@submit="onFormSubmit"
-		>
-			<div class="top">
+			<div class="bottom">
 				<Button
 					type="button"
 					severity="secondary"
@@ -160,7 +138,16 @@
 				</Button>
 				<Button v-if="editingMode == EditingMode.Update" type="submit"> Lưu </Button>
 			</div>
+		</Form>
 
+		<!-- Guest booking MC editing form -->
+		<Form
+			v-if="editingMode == EditingMode.Update && !user.isMc"
+			class="flex flex-col gap-4 w-full sm:w-56"
+			:resolver="guestFormResolver"
+			:initialValues="props.formInitialValues"
+			@submit="onFormSubmit"
+		>
 			<FormField name="fullName" class="flex flex-col gap-1" v-slot="$field">
 				<label for="fullName" class="form-label">Họ và tên</label>
 				<InputText type="text" placeholder="Nhập họ và tên" />
@@ -192,6 +179,19 @@
 					$field.error?.message
 				}}</Message>
 			</FormField>
+
+			<div class="bottom">
+				<Button
+					type="button"
+					severity="secondary"
+					v-if="editingMode == EditingMode.Update"
+					@click="cancelEditGeneralInfo"
+					width="80px"
+				>
+					Hủy
+				</Button>
+				<Button v-if="editingMode == EditingMode.Update" type="submit"> Lưu </Button>
+			</div>
 		</Form>
 
 		<div v-if="editingMode == EditingMode.None" class="general-info-wrapper">
@@ -313,9 +313,11 @@ import { useAuthStore } from "@/stores/authStore";
 
 // Define component props
 const props = defineProps<{
-	formInitialValues: any;
+	formInitialValues: any; // Initial values for the form fields
+	userId: number; // ID of the user being edited/viewed
 }>();
 
+// editingMode model to track the current editing state
 const editingMode = defineModel<EditingMode>("editingMode", {
 	default: EditingMode.None,
 });
@@ -332,9 +334,6 @@ const emit = defineEmits<{
 	(e: "submitted", values: any): void;
 }>();
 
-//#region Constants and Variables
-const route = useRoute();
-const userId = Number(route.params.id);
 const authStore = useAuthStore();
 const { updateEntityState } = useEntity();
 
@@ -403,12 +402,6 @@ const areasText = computed(() => {
 	return user.value.provinces?.map((province: Province) => province.name).join(", ") || "";
 });
 
-// const formInitialValues = ref({
-// 	...user.value,
-// });
-//#endregion
-
-//#region Profile Management
 /**
  * Saves General Information Changes
  *
@@ -424,7 +417,7 @@ const areasText = computed(() => {
  * created by tqcong 20/5/2025.
  */
 const handleSaveGeneralInfo = async (userSave: User) => {
-	userSave.id = userId;
+	userSave.id = props.userId;
 
 	// Handle details' entity state
 	if (authStore.user?.isMc == "true") {
@@ -433,7 +426,7 @@ const handleSaveGeneralInfo = async (userSave: User) => {
 		userSave.provinces = updateEntityState(userSave.provinces, props.formInitialValues.provinces);
 	}
 
-	const savedUser = await userApi.update(userId, userSave);
+	const savedUser = await userApi.update(props.userId, userSave);
 
 	editingMode.value = EditingMode.None;
 
@@ -467,18 +460,17 @@ const onFormSubmit = (e: any) => {
 		handleSaveGeneralInfo(e.values);
 	}
 };
-//#endregion
 </script>
 
 <style scoped lang="scss">
 .tab-content-wrapper {
 	margin-top: 12px;
 
-	.top {
+	.bottom {
 		display: flex;
 		justify-content: flex-end;
 		gap: 16px;
-		margin-bottom: 12px;
+		margin-top: 12px;
 		align-items: center;
 	}
 }

@@ -105,6 +105,7 @@
 							ref="profileGeneralInfoRef"
 							v-model:editingMode="editingMode"
 							v-model:user="user"
+							:user-id="userId"
 							:formInitialValues="formInitialValues"
 							@submitted="handleSaveGeneralInfoSuccessful"
 						/>
