@@ -1,3 +1,22 @@
+<!--
+* InformationVerificationStep.vue
+*
+* ID information verification and editing component.
+* Displays and validates extracted ID card information:
+* - Basic personal information
+* - Address information
+* - ID card details
+*
+* Features:
+* - Form validation
+* - Editable/Read-only modes
+* - Field grouping and organization
+* - Responsive layout
+* - Status-based display
+* - Date formatting
+*
+* created by tqcong 20/5/2025.
+-->
 <template>
 	<div class="information-verification-step">
 		<h2 class="text-xl font-semibold mb-4 text-center">
@@ -134,34 +153,77 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Information Verification Step Script
+ *
+ * Handles the display, validation, and editing of ID card information:
+ * - Props for ID info and verification status
+ * - Form validation
+ * - Edit mode management
+ * - Changes confirmation
+ *
+ * created by tqcong 20/5/2025.
+ */
+
 import { ref, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import type { IdInfo } from "@/entities/idVerification";
 
+/**
+ * Component props
+ * @prop {IdInfo} idInfo - ID card information to display/edit
+ * @prop {Date} verifiedAt - Verification timestamp
+ * @prop {boolean} isVerified - Verification status
+ * created by tqcong 20/5/2025.
+ */
 const props = defineProps<{
 	idInfo: IdInfo;
 	verifiedAt?: Date;
 	isVerified?: boolean;
 }>();
 
+/**
+ * Component events
+ * @event confirm - Emitted when user confirms information
+ * @event back - Emitted when user wants to go back
+ * created by tqcong 20/5/2025.
+ */
 const emit = defineEmits<{
 	(e: "confirm"): void;
 	(e: "back"): void;
 }>();
 
+/**
+ * Component state
+ * created by tqcong 20/5/2025.
+ */
 const toast = useToast();
 const isEditing = ref(false);
 const editableInfo = ref<IdInfo>({ ...props.idInfo });
 
+/**
+ * Enables edit mode
+ * created by tqcong 20/5/2025.
+ */
 const startEditing = () => {
 	isEditing.value = true;
 };
 
+/**
+ * Cancels edit mode and restores original values
+ * created by tqcong 20/5/2025.
+ */
 const cancelEditing = () => {
 	editableInfo.value = { ...props.idInfo };
 	isEditing.value = false;
 };
 
+/**
+ * Validates form information
+ * Checks for required fields and displays error message if missing
+ * @returns {boolean} True if all required fields are filled
+ * created by tqcong 20/5/2025.
+ */
 const validateInfo = (): boolean => {
 	const requiredFields: (keyof IdInfo)[] = [
 		"idNumber",
@@ -191,6 +253,12 @@ const validateInfo = (): boolean => {
 	return true;
 };
 
+/**
+ * Saves edited information
+ * Validates form and updates parent component with new values
+ * Shows success notification on completion
+ * created by tqcong 20/5/2025.
+ */
 const saveChanges = () => {
 	if (validateInfo()) {
 		Object.assign(props.idInfo, editableInfo.value);
@@ -204,12 +272,22 @@ const saveChanges = () => {
 	}
 };
 
+/**
+ * Validates and confirms information
+ * Emits confirm event if validation passes
+ * created by tqcong 20/5/2025.
+ */
 const confirmInfo = () => {
 	if (validateInfo()) {
 		emit("confirm");
 	}
 };
 
+/**
+ * Component initialization
+ * Sets up initial editable information from props
+ * created by tqcong 20/5/2025.
+ */
 onMounted(() => {
 	editableInfo.value = { ...props.idInfo };
 });

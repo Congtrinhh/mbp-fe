@@ -1,3 +1,19 @@
+<!--
+* PostList.vue
+* 
+* A comprehensive view component for displaying and managing posts in the application.
+* Implements infinite scrolling, post filtering, and full CRUD operations.
+*
+* Features:
+* - Infinite scroll pagination
+* - Post creation and editing with validation
+* - Post reactions (likes)
+* - Draft post saving
+* - Post filtering by groups
+* - Responsive design
+*
+* created by tqcong 20/5/2025.
+-->
 <template>
 	<main class="main-container" @scroll="handleScroll" style="overflow-y: auto; max-height: 99vh">
 		<header class="header">
@@ -12,7 +28,7 @@
 				/>
 			</div>
 			<div
-				v-if="authStore.user && authStore.user.isMc == 'false'"
+				v-if="authStore.user && authStore.user.isMc === false"
 				class="create-post-button"
 				@click="openPostDialog(EditingMode.Create)"
 			>
@@ -229,7 +245,17 @@
 	</main>
 </template>
 
+/** * Post List View Component * * A comprehensive component that manages the display and interaction of posts in the
+application. * It provides functionality for creating, reading, updating, and deleting posts, as well as * handling user
+interactions like reactions and filtering. * * Key Features: * - Post creation and editing with validation * - Post
+filtering by groups * - Infinite scroll pagination * - Like/reaction system * - Draft post saving * - Responsive layout
+* * created by tqcong 20/5/2025. */
+
 <script setup lang="ts">
+/**
+ * Core Vue composition APIs and utilities
+ * created by tqcong 20/5/2025.
+ */
 import { ref, onMounted, watch } from "vue";
 import { EditingMode } from "@/enums/editingMode";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
@@ -267,12 +293,23 @@ const toast = useToast();
 
 const appStore = useAppStore();
 const appName = appStore.appName;
-//#region Form Data
 /**
- * The defaultPost object represents a template for a Post with default values.
+ * Form Configuration and Management
  *
- * This is useful for initializing a new Post object with default values to ensure
- * that all required fields are present and have a defined initial state.
+ * Handles all aspects of post form functionality:
+ * - Form validation using Zod schema
+ * - Form state management
+ * - Default values and templates
+ * - Form submission handling
+ * - Draft saving/loading
+ *
+ * created by tqcong 20/5/2025.
+ */
+
+/**
+ * Template for initializing new posts with default values
+ * Ensures consistent post structure and required fields
+ * created by tqcong 20/5/2025.
  */
 const defaultPost: Post = {
 	id: 0,
@@ -285,6 +322,8 @@ const defaultPost: Post = {
 	mcRequirement: "",
 	priceFrom: 0,
 	priceTo: 0,
+	reactions: [], // Add missing reactions array
+	entityState: 0, // Add missing entity state
 };
 
 const post = ref<Post>(cloneDeep(defaultPost));
@@ -345,7 +384,18 @@ const onFormSubmit = async (formInfo: any) => {
 };
 //#endregion
 
-//#region Dialog Management
+/**
+ * Dialog Management System
+ *
+ * Handles the post creation/editing dialog:
+ * - Dialog visibility state
+ * - Edit/Create mode switching
+ * - Draft management
+ * - Unsaved changes protection
+ * - Form state persistence
+ *
+ * created by tqcong 20/5/2025.
+ */
 const isPostDialogVisible = ref(false);
 const editingMode = ref<EditingMode>(EditingMode.Create);
 
@@ -409,7 +459,25 @@ const closePostDialog = async (isSave: boolean = false) => {
 };
 //#endregion
 
-//#region Post Management
+/**
+ * Post CRUD Operations
+ *
+ * Manages all post-related operations:
+ * - Creating new posts
+ * - Updating existing posts
+ * - Success/error notifications
+ * - State updates after operations
+ *
+ * created by tqcong 20/5/2025.
+ */
+
+/**
+ * Saves or updates a post based on current editing mode
+ *
+ * @param {Post} post - The post data to be saved
+ * @returns {Promise<void>}
+ * created by tqcong 20/5/2025.
+ */
 const savePost = async (post: Post) => {
 	if (editingMode.value == EditingMode.Update) {
 		post.id = selectedPostId.value;
@@ -434,7 +502,18 @@ const savePost = async (post: Post) => {
 };
 //#endregion
 
-//#region Post Data
+/**
+ * Post List Data Management
+ *
+ * Handles post list state and operations:
+ * - Post data storage and updates
+ * - Infinite scroll pagination
+ * - Loading states
+ * - Data clearing and refreshing
+ * - Filtering and sorting
+ *
+ * created by tqcong 20/5/2025.
+ */
 const posts = ref<Post[]>([]);
 
 const clearPosts = () => {
@@ -465,6 +544,14 @@ const loadMorePosts = async () => {
 	isLoading.value = false;
 };
 
+/**
+ * Infinite Scroll Handler
+ *
+ * Detects when user reaches bottom of post list and loads more posts
+ *
+ * @param {Event} event - Scroll event object
+ * created by tqcong 20/5/2025.
+ */
 const handleScroll = (event: any) => {
 	const bottom = event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight;
 	if (bottom) {
@@ -499,8 +586,18 @@ const getReactionInfo = (reactions: any[]) => {
 };
 //#endregion
 
+/**
+ * Post Filtering and Reaction System
+ *
+ * Manages post categories and user reactions:
+ * - Post group filtering
+ * - Like/unlike functionality
+ * - Reaction count display
+ * - User interaction tracking
+ *
+ * created by tqcong 20/5/2025.
+ */
 const groups = getPostGroupDataSource();
-
 const reactionApi = BaseApi.getInstance<Reaction>("reactions");
 
 /**
@@ -524,6 +621,7 @@ const toggleLikePost = async (post: Post) => {
 			userName: authStore.user?.fullName || "",
 			type: 0,
 			id: 0,
+			entityState: 0,
 		};
 		post.reactions.push(newReaction);
 		const createdReaction = await reactionApi.create(newReaction, false);
@@ -538,6 +636,16 @@ watch(
 	}
 );
 
+/**
+ * Dialog Display Handler
+ *
+ * Manages dialog content when shown:
+ * - Loads draft posts in create mode
+ * - Fetches post data in edit mode
+ * - Initializes form state
+ *
+ * created by tqcong 20/5/2025.
+ */
 const handleAfterShowDialog = async () => {
 	if (editingMode.value === EditingMode.Create) {
 		const draftPost = getItem("post");
@@ -557,19 +665,45 @@ const handleLoginClick = () => {
 	router.push({ name: "user-login", query: { redirect: router.currentRoute.value.fullPath } });
 };
 
-const postMenu = ref(null);
+/**
+ * Post Menu Configuration
+ *
+ * Setup for post action menu (edit/delete):
+ * - Menu items definition
+ * - Selected post tracking
+ * - Action handlers
+ *
+ * created by tqcong 20/5/2025.
+ */
+import Menu from "primevue/menu";
+const postMenu = ref<InstanceType<typeof Menu> | null>(null);
 const selectedPostId = ref<number>(0);
 const postMenuItems = [
 	{ label: "Chỉnh sửa", icon: "pi pi-pencil", command: () => handleEditPost() },
 	{ label: "Xóa", icon: "pi pi-trash", command: () => handleDeletePost() },
 ];
 
+/**
+ * Shows the post action menu at clicked position
+ *
+ * @param {Event} event - Click event that triggered menu
+ * @param {number} postId - ID of post being acted upon
+ * created by tqcong 20/5/2025.
+ */
 function handleShowPostMenu(event: Event, postId: number) {
 	selectedPostId.value = postId;
 
 	postMenu.value?.toggle(event);
 }
 
+/**
+ * Initiates post editing workflow
+ *
+ * Fetches full post data and opens edit dialog
+ * Shows error toast if fetch fails
+ *
+ * created by tqcong 20/5/2025.
+ */
 async function handleEditPost() {
 	try {
 		const fetchedPost = await postApi.getById(selectedPostId.value);
@@ -581,6 +715,14 @@ async function handleEditPost() {
 	}
 }
 
+/**
+ * Handles post deletion process
+ *
+ * Deletes post and refreshes list
+ * Shows success/error notifications
+ *
+ * created by tqcong 20/5/2025.
+ */
 async function handleDeletePost() {
 	try {
 		await postApi.delete(selectedPostId.value);

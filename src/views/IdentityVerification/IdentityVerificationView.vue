@@ -1,3 +1,23 @@
+<!--
+* IdentityVerificationView.vue
+*
+* Multi-step identity verification component that handles user identity verification:
+* - Step 1: Overview of verification process
+* - Step 2: Face photo capture
+* - Step 3: ID card front capture
+* - Step 4: ID card back capture
+* - Step 5: Information verification and confirmation
+*
+* Features:
+* - Progressive step navigation
+* - Photo capture and upload
+* - ID information extraction and verification
+* - Status persistence
+* - Error handling and notifications
+* - Responsive design
+*
+* created by tqcong 20/5/2025.
+-->
 <template>
 	<main class="main-container p-4">
 		<!-- Step Progress -->
@@ -60,7 +80,7 @@
 				v-if="(currentStep === 4 && idInfo) || (isVerified && idInfo)"
 				:id-info="idInfo"
 				:is-verified="isVerified"
-				:verified-at="status?.verifiedAt"
+				:verified-at="status?.verifiedAt || undefined"
 				@confirm="handleInfoConfirmed"
 				@back="currentStep--"
 			/>
@@ -74,6 +94,19 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Identity Verification View Script
+ *
+ * Handles the multi-step identity verification process:
+ * - Face photo capture and upload
+ * - ID card front/back capture and upload
+ * - Information extraction and verification
+ * - Progress tracking and persistence
+ * - Error handling and user feedback
+ *
+ * created by tqcong 20/5/2025.
+ */
+
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
@@ -84,6 +117,10 @@ import FaceCaptureStep from "@/components/identity-verification/FaceCaptureStep.
 import IdCardCaptureStep from "@/components/identity-verification/IdCardCaptureStep.vue";
 import InformationVerificationStep from "@/components/identity-verification/InformationVerificationStep.vue";
 
+/**
+ * Component state and dependencies
+ * created by tqcong 20/5/2025.
+ */
 const router = useRouter();
 const toast = useToast();
 const currentStep = ref(0);
@@ -91,6 +128,11 @@ const idInfo = ref<IdInfo | null>(null);
 const isVerified = ref(false);
 const status = ref<UserIdVerification | null>(null);
 
+/**
+ * Verification steps configuration
+ * Each step contains a label and description
+ * created by tqcong 20/5/2025.
+ */
 const steps = [
 	{
 		label: `Các bước thực hiện`,
@@ -114,10 +156,21 @@ const steps = [
 	},
 ];
 
+/**
+ * Step initialization handler
+ * Starts the verification process by moving to step 1
+ * created by tqcong 20/5/2025.
+ */
 const startVerification = () => {
 	currentStep.value = 1;
 };
 
+/**
+ * Face photo capture handler
+ * @param {string} photoData - Base64 encoded photo data
+ * Uploads face photo and advances to next step on success
+ * created by tqcong 20/5/2025.
+ */
 const handleFacePhotoCaptured = async (photoData: string) => {
 	try {
 		await idVerificationApi.uploadFacePhoto(photoData);
@@ -132,6 +185,12 @@ const handleFacePhotoCaptured = async (photoData: string) => {
 	}
 };
 
+/**
+ * ID card front photo capture handler
+ * @param {string} photoData - Base64 encoded photo data
+ * Uploads front photo of ID card and advances to next step
+ * created by tqcong 20/5/2025.
+ */
 const handleIdCardFrontCaptured = async (photoData: string) => {
 	try {
 		await idVerificationApi.uploadIdCardPhoto(photoData, "front");
@@ -146,6 +205,12 @@ const handleIdCardFrontCaptured = async (photoData: string) => {
 	}
 };
 
+/**
+ * ID card back photo capture handler
+ * @param {string} photoData - Base64 encoded photo data
+ * Uploads back photo of ID card and retrieves extracted info
+ * created by tqcong 20/5/2025.
+ */
 const handleIdCardBackCaptured = async (photoData: string) => {
 	try {
 		await idVerificationApi.uploadIdCardPhoto(photoData, "back");
@@ -161,6 +226,12 @@ const handleIdCardBackCaptured = async (photoData: string) => {
 	}
 };
 
+/**
+ * Information confirmation handler
+ * Confirms extracted ID information and completes verification
+ * Redirects to settings page on success
+ * created by tqcong 20/5/2025.
+ */
 const handleInfoConfirmed = async () => {
 	try {
 		if (!idInfo.value) throw new Error("No ID information available");

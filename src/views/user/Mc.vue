@@ -769,14 +769,26 @@ const provinces = provinceStore.provinces;
 
 const genders = ref(getGenderDataSource());
 
+/**
+ * Formatted text of MC's hosting styles
+ * Combines all hosting style labels into a comma-separated string
+ */
 const hostingStylesText = computed(() => {
 	return user.value.hostingStyles?.map((style: HostingStyle) => style.label).join(", ") || "";
 });
 
+/**
+ * Formatted text of MC types
+ * Combines all MC type labels into a comma-separated string
+ */
 const mcTypesText = computed(() => {
 	return user.value.mcTypes?.map((type: McType) => type.label).join(", ") || "";
 });
 
+/**
+ * Formatted text of MC's operating areas
+ * Combines all province names into a comma-separated string
+ */
 const areasText = computed(() => {
 	return user.value.provinces?.map((province: Province) => province.name).join(", ") || "";
 });
@@ -787,6 +799,20 @@ const formInitialValues = ref({
 	...user.value,
 });
 
+/**
+ * Saves General Information Changes
+ *
+ * Handles the submission of general profile information updates:
+ * - Updates user ID from route params
+ * - Handles MC-specific entity state updates for related data
+ * - Submits changes to backend
+ * - Updates UI state and shows confirmation
+ * - Refreshes user data
+ *
+ * @param {User} userSave - The user data to be saved
+ * @returns {Promise<void>}
+ * created by tqcong 20/5/2025.
+ */
 const handleSaveGeneralInfo = async (userSave: User) => {
 	userSave.id = userId;
 
@@ -820,6 +846,10 @@ const { updateEntityState } = useEntity();
 const images = ref<Media[]>([]);
 const initialImages = ref<Media[]>([]);
 
+/**
+ * Sorted list of images by sort order (descending)
+ * Creates a new sorted array to maintain reactivity
+ */
 const sortedImages = computed(() => {
 	return [...images.value].sort((a, b) => b.sortOrder - a.sortOrder);
 });
@@ -877,6 +907,7 @@ const onAddImageClick = () => {
 					url: "",
 					sortOrder: images.value.length + 1,
 					file: file, // Include the file to upload
+					entityState: EntityState.Add,
 				};
 
 				const response = await mediaApi.upload(newMedia);
@@ -902,6 +933,10 @@ const onAddImageClick = () => {
 const videos = ref<Media[]>([]);
 const initialVideos = ref<Media[]>([]);
 
+/**
+ * Sorted list of videos by sort order (descending)
+ * Creates a new sorted array to maintain reactivity
+ */
 const sortedVideos = computed(() => {
 	return [...videos.value].sort((a, b) => b.sortOrder - a.sortOrder);
 });
@@ -958,6 +993,7 @@ const onAddVideoClick = () => {
 				url: "",
 				sortOrder: videos.value.length + 1,
 				file: file, // Include the file to upload
+				entityState: EntityState.Add,
 			};
 
 			const response = await mediaApi.upload(newMedia);
@@ -977,60 +1013,170 @@ const onAddVideoClick = () => {
 //#endregion
 
 //#region Review Tab Panel Logic
-const reviews = ref<ClientReviewMc[] | McReviewClient[]>([]);
+interface BaseReview {
+	id: number;
+	clientId?: number;
+	mcId?: number;
+	contractId?: number;
+	shortDescription?: string;
+	detailDescription: string;
+	overallPoint: number;
+	reliablePoint: number;
+	createdAt: Date;
+	collapsed: boolean;
+	contract?: any;
+	client?: any;
+	mc?: any;
+	entityState?: EntityState;
+}
+
+interface ClientReviewWithType extends BaseReview {
+	type: "ClientReviewMc";
+	proPoint: number;
+	attitudePoint: number;
+}
+
+interface McReviewWithType extends BaseReview {
+	type: "McReviewClient";
+	paymentPunctualPoint: number;
+}
+
+type ReviewWithType = ClientReviewWithType | McReviewWithType;
+
+const reviews = ref<ReviewWithType[]>([]);
 const reviewPage = ref(0);
 const reviewPageSize = 10;
 const hasMoreReviews = ref(true);
 const isLoadingReviews = ref(false);
 
+const isMcReviewClient = (review: ReviewWithType): review is ReviewWithType & { type: "McReviewClient" } => {
+	return review.type === "McReviewClient";
+};
+
+/**
+ * Fetches Reviews with Pagination
+ *
+ * Loads reviews for the current user profile with infinite scroll support:
+ * - Handles both MC and client review types
+ * - Implements pagination with specified page size
+ * - Manages loading states to prevent duplicate requests
+ * - Adds collapse state to reviews for expandable view
+ * - Includes related contract and user data
+ *
+ * @returns {Promise<void>}
+ * created by tqcong 20/5/2025.
+ */
 const fetchReviews = async () => {
 	if (!hasMoreReviews.value || isLoadingReviews.value) return;
 
 	isLoadingReviews.value = true;
 
-	let response;
-	if (user.value.isMc) {
-		const pagedRequest: ClientReviewMcPagedRequest = {
-			pageIndex: reviewPage.value,
-			pageSize: reviewPageSize,
-			mcId: userId,
-			isUseProc: true,
-			isGetContract: true,
-			isGetMc: true,
-			isGetClient: true,
-		};
-		response = await clientReviewMcApi.getPaged(pagedRequest);
-	} else {
-		const pagedRequest: McReviewClientPagedRequest = {
-			pageIndex: reviewPage.value,
-			pageSize: reviewPageSize,
-			clientId: userId,
-			isUseProc: true,
-			isGetContract: true,
-			isGetMc: true,
-			isGetClient: true,
-		};
-		response = await mcReviewClientApi.getPaged(pagedRequest);
-	}
+	try {
+		let response;
+		if (user.value.isMc) {
+			const pagedRequest: ClientReviewMcPagedRequest = {
+				pageIndex: reviewPage.value,
+				pageSize: reviewPageSize,
+				mcId: userId,
+				isUseProc: true,
+				isGetContract: true,
+				isGetMc: true,
+				isGetClient: true,
+			};
+			const clientReviews = await clientReviewMcApi.getPaged(pagedRequest);
+			response = {
+				items: clientReviews.items.map((item: ClientReviewMc) => ({
+					id: item.id,
+					clientId: item.clientId,
+					mcId: item.mcId,
+					contractId: item.contractId,
+					shortDescription: item.shortDescription,
+					detailDescription: item.detailDescription,
+					overallPoint: item.overallPoint,
+					reliablePoint: item.reliablePoint,
+					createdAt: item.createdAt,
+					contract: item.contract,
+					client: item.client,
+					mc: item.mc,
+					collapsed: true,
+					type: "ClientReviewMc" as const,
+					proPoint: item.proPoint,
+					attitudePoint: item.attitudePoint,
+					entityState: item.entityState,
+				})) as ClientReviewWithType[],
+			};
+		} else {
+			const pagedRequest: McReviewClientPagedRequest = {
+				pageIndex: reviewPage.value,
+				pageSize: reviewPageSize,
+				clientId: userId,
+				isUseProc: true,
+				isGetContract: true,
+				isGetMc: true,
+				isGetClient: true,
+			};
+			const mcReviews = await mcReviewClientApi.getPaged(pagedRequest);
+			response = {
+				items: mcReviews.items.map((item: McReviewClient) => ({
+					id: item.id,
+					clientId: item.clientId,
+					mcId: item.mcId,
+					contractId: item.contractId,
+					shortDescription: item.shortDescription,
+					detailDescription: item.detailDescription,
+					overallPoint: item.overallPoint,
+					reliablePoint: item.reliablePoint,
+					createdAt: item.createdAt,
+					contract: item.contract,
+					client: item.client,
+					mc: item.mc,
+					collapsed: true,
+					type: "McReviewClient" as const,
+					paymentPunctualPoint: item.paymentPunctualPoint,
+					entityState: item.entityState,
+				})) as McReviewWithType[],
+			};
+		}
 
-	if (response.items.length < reviewPageSize) {
-		hasMoreReviews.value = false;
-	}
+		if (response.items.length < reviewPageSize) {
+			hasMoreReviews.value = false;
+		}
 
-	if (user.value.isMc) {
-		reviews.value = reviews.value.concat(
-			response.items.map((item: ClientReviewMc) => ({ ...item, collapsed: true }))
-		);
-	} else {
-		reviews.value = reviews.value.concat(
-			response.items.map((item: McReviewClient) => ({ ...item, collapsed: true }))
-		);
+		const newReviews = response.items as ReviewWithType[];
+		reviews.value = [...reviews.value, ...newReviews];
+		reviewPage.value++;
+	} catch (error) {
+		console.error("Error fetching reviews:", error);
+		toast.add({
+			severity: "error",
+			summary: "Lỗi",
+			detail: "Không thể tải đánh giá",
+			life: 3000,
+		});
+	} finally {
+		isLoadingReviews.value = false;
 	}
-
-	reviewPage.value++;
-	isLoadingReviews.value = false;
 };
+const handleScroll = (event: Event) => {
+	const target = event.target as HTMLElement;
+	const bottom = target.scrollHeight - target.scrollTop === target.clientHeight;
+	if (bottom) {
+		fetchReviews();
+	}
+};
+
 //#endregion
+/**
+ * Sets Current User Profile Data
+ *
+ * Fetches and updates the current profile's user data:
+ * - Retrieves user information from API by ID
+ * - Updates local user state
+ * - Sets initial form values for editing
+ *
+ * @returns {Promise<void>}
+ * created by tqcong 20/5/2025.
+ */
 const setUser = async () => {
 	const userFromApi = await userApi.getById(userId);
 	user.value = userFromApi;
@@ -1044,7 +1190,25 @@ onMounted(async () => {
 		// await handleTabChange({ index: routeTabIndex });
 	}
 });
-const onFormSubmit = (e) => {
+/**
+ * Form Submission Handler
+ *
+ * Processes form submissions for both MC and guest user profiles:
+ * - Validates form data before submission
+ * - Handles saving profile information updates
+ * - Processes different form types based on user role
+ *
+ * @param {Object} e - Form submission event object containing:
+ *   - originalEvent: Native form submit event
+ *   - valid: Form validation status
+ *   - states: Current state of form fields
+ *   - errors: Validation errors if any
+ *   - values: Current form field values
+ *   - reset: Form reset function
+ * @returns {void}
+ * created by tqcong 20/5/2025.
+ */
+const onFormSubmit = (e: any) => {
 	// e.originalEvent: Represents the native form submit event.
 	// e.valid: A boolean that indicates whether the form is valid or not.
 	// e.states: Contains the current state of each form field, including validity status.
@@ -1065,6 +1229,19 @@ enum TabType {
 
 const activeTab = ref("0");
 
+/**
+ * Tab Change Handler
+ *
+ * Manages content loading when switching between tabs:
+ * - Resets editing mode state
+ * - Updates active tab
+ * - Loads appropriate content based on tab type
+ * - Handles MC-specific content loading for media tabs
+ *
+ * @param {number} value - The index of the selected tab
+ * @returns {Promise<void>}
+ * created by tqcong 20/5/2025.
+ */
 const handleTabChange = async (value: number) => {
 	editingMode.value = EditingMode.None;
 
@@ -1083,12 +1260,27 @@ const handleTabChange = async (value: number) => {
 };
 
 //#region Send offer
+/**
+ * Offer Management Functions
+ * Handles the creation and submission of booking offers to MCs
+ */
+
+/**
+ * Initiates the offer creation process by opening the offer dialog
+ */
 const sendOffer = () => {
 	openOfferDialog();
 };
 
+/**
+ * Dialog visibility state for the offer form
+ */
 const isOfferDialogVisible = ref(false);
 
+/**
+ * Default offer data structure
+ * Initial values for the offer form
+ */
 const defaultOffer = {
 	eventName: "",
 	eventStart: new Date(),
@@ -1097,8 +1289,19 @@ const defaultOffer = {
 	note: "",
 };
 
+/**
+ * Reactive reference to the current offer form data
+ */
 const offer = ref(cloneDeep(defaultOffer));
 
+/**
+ * Offer Form Validation Schema
+ * Defines validation rules for the offer submission form:
+ * - Required event name
+ * - Start date must be in the future
+ * - End date must be after start date
+ * - Optional place and note fields
+ */
 const offerFormResolver = zodResolver(
 	z
 		.object({
@@ -1122,6 +1325,22 @@ const offerFormResolver = zodResolver(
 
 const authStore = useAuthStore();
 
+/**
+ * Handles Offer Form Submission
+ *
+ * Processes the submission of booking offers:
+ * - Validates form data
+ * - Creates notification with offer details
+ * - Sends notification to MC
+ * - Shows confirmation toast
+ * - Resets form on success
+ *
+ * @param {Object} formInfo - Form submission data containing:
+ *   - valid: Form validation status
+ *   - values: Form field values
+ * @returns {Promise<void>}
+ * created by tqcong 20/5/2025.
+ */
 const onOfferFormSubmit = async (formInfo: any) => {
 	const { valid, values } = formInfo;
 	if (valid) {
@@ -1141,7 +1360,8 @@ const onOfferFormSubmit = async (formInfo: any) => {
 			message: "Bạn đã nhận được một offer mới",
 			additionalInfo: JSON.stringify(additionalInfo),
 			type: NotificationType.SendOffer,
-			thumbUrl: authStore.user?.avatarUrl, // Add thumbUrl property
+			thumbUrl: authStore.user?.avatarUrl,
+			entityState: EntityState.Add,
 		};
 
 		await notificationApi.create(notification);
@@ -1156,10 +1376,17 @@ const onOfferFormSubmit = async (formInfo: any) => {
 	}
 };
 
+/**
+ * Opens the offer dialog for sending booking offers
+ */
 const openOfferDialog = () => {
 	isOfferDialogVisible.value = true;
 };
 
+/**
+ * Closes the offer dialog and optionally resets form
+ * @param {boolean} isSave - Whether data was saved, triggers form reset if true
+ */
 const closeOfferDialog = (isSave: boolean = false) => {
 	if (isSave) {
 		offer.value = cloneDeep(defaultOffer);
@@ -1168,9 +1395,18 @@ const closeOfferDialog = (isSave: boolean = false) => {
 };
 //#endregion
 
-const avatarMenu = ref(null);
+/**
+ * References for avatar menu and dialog functionality
+ */
+const avatarMenu = ref<{ toggle: (event: Event) => void } | null>(null);
 const isAvatarDialogVisible = ref(false);
 
+/**
+ * Configuration for avatar menu items
+ * Defines available actions for avatar manipulation:
+ * - View full size avatar
+ * - Upload new avatar
+ */
 const avatarMenuItems = [
 	{
 		label: "Xem ảnh đại diện",
@@ -1188,12 +1424,25 @@ const avatarMenuItems = [
 	},
 ];
 
+/**
+ * Shows the avatar menu when clicking on the avatar image
+ * Only shows for users with edit permission
+ * @param {Event} event - Click event object
+ */
 const showAvatarMenu = (event: any) => {
 	if (hasEditPermission.value) {
 		avatarMenu.value?.toggle(event);
 	}
 };
 
+/**
+ * Handles avatar image upload
+ *
+ * Opens file selection dialog and processes selected image:
+ * - Validates file type
+ * - Uploads to server
+ * - Updates avatar URL in UI
+ */
 const handleUpload = () => {
 	const input = document.createElement("input");
 	input.type = "file";
@@ -1210,9 +1459,16 @@ const handleUpload = () => {
 };
 
 // #region Image Viewer
+/**
+ * State for image viewer modal
+ */
 const isImageViewerVisible = ref(false);
 const selectedImageIndex = ref(0);
 
+/**
+ * Opens the image viewer modal at specified index
+ * @param {number} index - Index of image to display
+ */
 const openImageViewer = (index: number) => {
 	selectedImageIndex.value = index;
 	isImageViewerVisible.value = true;
@@ -1220,18 +1476,21 @@ const openImageViewer = (index: number) => {
 // #endregion
 
 // #region Video Viewer
+/**
+ * State for video viewer modal
+ */
 const isVideoViewerVisible = ref(false);
 const selectedVideoIndex = ref(0);
 
+/**
+ * Opens the video viewer modal at specified index
+ * @param {number} index - Index of video to display
+ */
 const openVideoViewer = (index: number) => {
 	selectedVideoIndex.value = index;
 	isVideoViewerVisible.value = true;
 };
 // #endregion
-
-const isMcReviewClient = (review: any): boolean => {
-	return "paymentPunctualPoint" in review;
-};
 
 /**
  * Navigate to the identity verification view
@@ -1536,8 +1795,15 @@ section.top {
 	position: relative;
 }
 
+.reviews {
+	max-height: 80vh;
+	overflow-y: auto;
+	padding-right: 16px;
+}
+
 .view-more-button {
 	text-decoration: underline;
+	cursor: pointer;
 }
 
 .drag-handle {

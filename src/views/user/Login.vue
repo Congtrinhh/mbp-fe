@@ -1,3 +1,23 @@
+<!--
+* Login.vue
+*
+* Login view component with Google authentication.
+* Handles user authentication flow including:
+* - Google Sign-In integration
+* - Email verification check
+* - New user registration flow
+* - Existing user login
+* - Return URL handling
+*
+* Features:
+* - Single Sign-On with Google
+* - JWT token handling
+* - Conditional navigation
+* - Toast notifications
+* - Responsive design
+*
+* created by tqcong 20/5/2025.
+-->
 <template>
 	<main class="main-container background-1">
 		<h1 class="title">Chào mừng bạn đến với nền tảng booking MC - MBP</h1>
@@ -9,6 +29,18 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Login Component Script
+ *
+ * Handles Google authentication flow and user redirection:
+ * - Google Sign-In integration
+ * - JWT token decoding and validation
+ * - New/existing user handling
+ * - Redirect management
+ *
+ * created by tqcong 20/5/2025.
+ */
+
 import { GoogleSignInButton, type CredentialResponse } from "vue3-google-signin";
 import { jwtDecode } from "jwt-decode";
 import { authApi } from "@/apis/authApi";
@@ -16,16 +48,44 @@ import { useAuthStore } from "@/stores/authStore";
 import { useRouter, useRoute } from "vue-router";
 import { useToast } from "primevue/usetoast";
 
+/**
+ * Component state and dependencies
+ * created by tqcong 20/5/2025.
+ */
 const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 
-// handle success event
+/**
+ * Handles successful Google Sign-In
+ * @param {CredentialResponse} response - Google Sign-In response containing credentials
+ *
+ * Flow:
+ * 1. Extracts and validates token
+ * 2. Verifies email status
+ * 3. Handles new vs existing user cases
+ * 4. Manages redirections and notifications
+ *
+ * created by tqcong 20/5/2025.
+ */
+/** Google token payload interface */
+interface GoogleTokenPayload {
+	email: string;
+	name: string;
+	picture: string;
+	email_verified: boolean;
+}
+
 const handleLoginSuccess = async (response: CredentialResponse) => {
 	const { credential } = response;
-	// Decode the JWT token
-	const decodedToken = jwtDecode(credential);
+	if (!credential) {
+		console.error("No credential received");
+		return;
+	}
+
+	// Decode the JWT token with type
+	const decodedToken = jwtDecode<GoogleTokenPayload>(credential);
 
 	// Extract user information from the decoded token
 	const { email, name, picture, email_verified } = decodedToken;
@@ -56,7 +116,11 @@ const handleLoginSuccess = async (response: CredentialResponse) => {
 	}
 };
 
-// handle an error event
+/**
+ * Handles Google Sign-In errors
+ * Displays error notification to user
+ * created by tqcong 20/5/2025.
+ */
 const handleLoginError = () => {
 	toast.add({
 		severity: "error",

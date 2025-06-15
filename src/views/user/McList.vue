@@ -132,7 +132,16 @@
 	</main>
 </template>
 
+/** * MC List View Component * * This component provides a searchable and filterable list of MCs (Master of Ceremonies).
+* It implements infinite scrolling and advanced filtering capabilities for MC discovery. * * Key Features: * - Real-time
+search functionality * - Advanced filtering options (age, gender, style, etc.) * - Infinite scroll pagination * -
+Responsive grid layout * - Filter state management * * created by tqcong 20/5/2025. */
+
 <script setup lang="ts">
+/**
+ * Core dependencies and types required for MC list functionality
+ * created by tqcong 20/5/2025.
+ */
 import { userApi } from "@/apis/userApi";
 import type { User } from "@/entities/user/user";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
@@ -151,6 +160,11 @@ import { useAuthStore } from "@/stores/authStore";
 import { isEqual } from "lodash";
 import { useAppStore } from "@/stores/appStore";
 
+/**
+ * Filter Dialog State Management
+ * Controls visibility of advanced filter dialog
+ * created by tqcong 20/5/2025.
+ */
 const isVisibleFilterDialog = ref(false);
 const showFilterDialog = () => {
 	isVisibleFilterDialog.value = true;
@@ -159,9 +173,15 @@ const showFilterDialog = () => {
 const appStore = useAppStore();
 const appName = appStore.appName;
 
-//#region Form
+/**
+ * Form Configuration and Validation
+ *
+ * Sets up form validation rules and handling for the filter dialog.
+ * Uses Zod schema validation to ensure data integrity.
+ *
+ * created by tqcong 20/5/2025.
+ */
 const toast = useToast();
-
 const formRef = ref();
 
 const resolver = zodResolver(
@@ -203,7 +223,14 @@ const mcTypes = ref(mcTypeStore.mcTypes);
 
 //#endregion
 
-//#region Filter
+/**
+ * Filter State Management
+ *
+ * Manages the filter state and provides reset functionality.
+ * Default values are set for all filter parameters.
+ *
+ * created by tqcong 20/5/2025.
+ */
 const initialFilter = {
 	searchText: "",
 	genders: [],
@@ -225,7 +252,15 @@ const resetFilter = async () => {
 };
 //#endregion
 
-//#region Search
+/**
+ * Search Functionality
+ *
+ * Implements debounced search to prevent excessive API calls
+ * while user is typing. Triggers data refresh when search
+ * text changes.
+ *
+ * created by tqcong 20/5/2025.
+ */
 const searchText = ref("");
 const debouncedSearchInput = debounce(() => {
 	pagedRequest.pageIndex = 0;
@@ -235,7 +270,17 @@ const debouncedSearchInput = debounce(() => {
 }, 500);
 //#endregion
 
-//#region Pagination and Data Loading
+/**
+ * Pagination and Data Loading Logic
+ *
+ * Handles infinite scroll pagination and data loading:
+ * - Maintains list of loaded users
+ * - Manages loading state
+ * - Handles scroll events for infinite loading
+ * - Rebuilds request parameters based on filters
+ *
+ * created by tqcong 20/5/2025.
+ */
 const clearUsers = () => {
 	users.value = [];
 };
@@ -267,6 +312,18 @@ const rebuildPagedRequest = () => {
 	};
 };
 
+/**
+ * Loads additional users when scrolling
+ *
+ * This function:
+ * 1. Checks if already loading to prevent duplicate requests
+ * 2. Fetches next page of users based on current filters
+ * 3. Appends new users to existing list
+ * 4. Updates pagination state
+ *
+ * @returns {Promise<void>}
+ * created by tqcong 20/5/2025.
+ */
 const loadMoreUsers = async () => {
 	if (isLoading.value) return;
 	isLoading.value = true;
@@ -280,6 +337,15 @@ const loadMoreUsers = async () => {
 	isLoading.value = false;
 };
 
+/**
+ * Handles scroll events for infinite loading
+ *
+ * Detects when user has scrolled to bottom of the list
+ * and triggers loading of more users if available.
+ *
+ * @param {Event} event - Scroll event object
+ * created by tqcong 20/5/2025.
+ */
 const handleScroll = (event: any) => {
 	console.log("even");
 	const bottom = event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight;
@@ -306,14 +372,32 @@ onMounted(async () => {
 });
 //#endregion
 
-//#region Navigation
+/**
+ * Navigation Handlers
+ *
+ * Functions for handling navigation events:
+ * - Login redirection with return path
+ * - MC profile navigation
+ *
+ * created by tqcong 20/5/2025.
+ */
 const router = useRouter();
 const authStore = useAuthStore();
 
+/**
+ * Redirects to login page while preserving return path
+ * created by tqcong 20/5/2025.
+ */
 const handleLoginClick = () => {
 	router.push({ name: "user-login", query: { redirect: router.currentRoute.value.fullPath } });
 };
 
+/**
+ * Navigates to specific MC's profile page
+ *
+ * @param {number} id - MC's unique identifier
+ * created by tqcong 20/5/2025.
+ */
 const redirectToMC = (id: number) => {
 	router.push({ name: "uc-mc", params: { id } });
 };

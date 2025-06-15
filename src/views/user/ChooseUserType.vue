@@ -1,3 +1,20 @@
+<!--
+* ChooseUserType.vue
+*
+* User type selection during registration process.
+* Allows users to specify their role in the system:
+* - MC (with experience level selection)
+* - Guest booking MC
+*
+* Features:
+* - Dynamic form based on user selection
+* - Google auth integration
+* - Loading state handling
+* - Success/error notifications
+* - Navigation management
+*
+* created by tqcong 20/5/2025.
+-->
 <template>
 	<main class="main-container background-1">
 		<h1 class="title">Bạn là ai?</h1>
@@ -30,23 +47,59 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * User Type Selection Component Script
+ *
+ * Handles user type selection and registration completion:
+ * - Google credential validation
+ * - User type and experience selection
+ * - Account creation with selected preferences
+ * - Navigation and notification management
+ *
+ * created by tqcong 20/5/2025.
+ */
+
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { authApi } from "@/apis/authApi";
 import { useAuthStore } from "@/stores/authStore";
 import { hideLoading, showLoading } from "@/composables/useLoading";
+
+/**
+ * Component state and dependencies
+ * created by tqcong 20/5/2025.
+ */
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+
+/**
+ * User type selection state
+ * created by tqcong 20/5/2025.
+ */
 const isMc = ref(true);
 const isNewbie = ref<boolean>(false);
-const credential = route.query.credential;
+const credential = route.query.credential as string;
 
+/**
+ * Navigation handler to return to login page
+ * created by tqcong 20/5/2025.
+ */
 const goBack = () => {
 	router.push({ name: "user-login" });
 };
 
+/**
+ * Submits user type selection and completes registration
+ * - Validates Google credential
+ * - Creates user account with selected type
+ * - Handles success/error notifications
+ * - Manages loading state
+ * - Navigates to post list on success
+ *
+ * created by tqcong 20/5/2025.
+ */
 const submitUserType = async () => {
 	if (!credential) {
 		toast.add({ severity: "error", summary: "Lỗi", detail: "Thiếu thông tin xác thực", life: 3000 });
