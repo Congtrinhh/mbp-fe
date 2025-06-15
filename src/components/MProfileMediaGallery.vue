@@ -53,7 +53,7 @@ Video/Image tab of the user profile with add/edit/delete/reorder items functiona
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineProps, defineEmits } from "vue";
+import { ref, computed, defineProps, defineEmits } from "vue";
 import draggable from "vuedraggable";
 import { useToast } from "primevue/usetoast";
 import MMediaViewer from "@/components/MMediaViewer.vue";
@@ -68,10 +68,6 @@ import type { Media } from "@/entities/user/media";
 const props = defineProps<{
 	mediaType: MediaType;
 	userId: number;
-}>();
-
-const emit = defineEmits<{
-	// (e: "update:editingMode", mode: number): void;
 }>();
 
 // editingMode model to track the current editing state
@@ -142,7 +138,7 @@ const handleDragEnd = async () => {
 };
 
 const cancelEditMedia = () => {
-	emit("update:editingMode", EditingMode.None);
+	editingMode.value = EditingMode.None;
 };
 
 const onAddMediaClick = () => {

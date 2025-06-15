@@ -159,7 +159,7 @@ import { onMounted, ref, computed } from "vue";
 import { type User } from "@/entities/user/user";
 import { EditingMode } from "@/enums/editingMode";
 import { userApi } from "@/apis/userApi";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { MediaType } from "@/enums/mediaType";
 import { useAuthStore } from "@/stores/authStore";
 import MSendOfferDialog from "@/components/MSendOfferDialog.vue";
