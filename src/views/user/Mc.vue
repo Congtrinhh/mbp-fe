@@ -41,13 +41,13 @@
 					@click="sendOffer"
 					v-if="!isLoggedUser && user.isMc && authStore.user?.isMc == 'false'"
 				></Button>
-				<!-- <Button
+				<Button
 					type="button"
 					label="Nhắn tin"
 					severity="contrast"
 					variant="outlined"
 					v-if="!isLoggedUser && authStore.user"
-				></Button> -->
+				></Button>
 				<Button
 					type="button"
 					label="Xác thực danh tính"
@@ -714,6 +714,7 @@ import type { McReviewClient } from "@/entities/mcReviewClient";
 import type { McReviewClientPagedRequest } from "@/entities/user/paging/mcReviewClientPagedRequest";
 import { mcReviewClientApi } from "@/apis/mcReviewClientApi";
 
+//#region Constants and Variables
 const toast = useToast();
 const route = useRoute();
 const router = useRouter();
@@ -798,7 +799,9 @@ const editingMode = ref<EditingMode>(EditingMode.None);
 const formInitialValues = ref({
 	...user.value,
 });
+//#endregion
 
+//#region Profile Management
 /**
  * Saves General Information Changes
  *
@@ -842,7 +845,38 @@ const cancelEditGeneralInfo = () => {
 
 const { updateEntityState } = useEntity();
 
-//#region Image Tab Panel Logic
+/**
+ * Form Submission Handler
+ *
+ * Processes form submissions for both MC and guest user profiles:
+ * - Validates form data before submission
+ * - Handles saving profile information updates
+ * - Processes different form types based on user role
+ *
+ * @param {Object} e - Form submission event object containing:
+ *   - originalEvent: Native form submit event
+ *   - valid: Form validation status
+ *   - states: Current state of form fields
+ *   - errors: Validation errors if any
+ *   - values: Current form field values
+ *   - reset: Form reset function
+ * @returns {void}
+ * created by tqcong 20/5/2025.
+ */
+const onFormSubmit = (e: any) => {
+	// e.originalEvent: Represents the native form submit event.
+	// e.valid: A boolean that indicates whether the form is valid or not.
+	// e.states: Contains the current state of each form field, including validity status.
+	// e.errors: An object that holds any validation errors for the invalid fields in the form.
+	// e.values: An object containing the current values of all form fields.
+	// e.reset: A function that resets the form to its initial state.
+	if (e.valid) {
+		handleSaveGeneralInfo(e.values);
+	}
+};
+//#endregion
+
+//#region Media Management
 const images = ref<Media[]>([]);
 const initialImages = ref<Media[]>([]);
 
@@ -1190,36 +1224,9 @@ onMounted(async () => {
 		// await handleTabChange({ index: routeTabIndex });
 	}
 });
-/**
- * Form Submission Handler
- *
- * Processes form submissions for both MC and guest user profiles:
- * - Validates form data before submission
- * - Handles saving profile information updates
- * - Processes different form types based on user role
- *
- * @param {Object} e - Form submission event object containing:
- *   - originalEvent: Native form submit event
- *   - valid: Form validation status
- *   - states: Current state of form fields
- *   - errors: Validation errors if any
- *   - values: Current form field values
- *   - reset: Form reset function
- * @returns {void}
- * created by tqcong 20/5/2025.
- */
-const onFormSubmit = (e: any) => {
-	// e.originalEvent: Represents the native form submit event.
-	// e.valid: A boolean that indicates whether the form is valid or not.
-	// e.states: Contains the current state of each form field, including validity status.
-	// e.errors: An object that holds any validation errors for the invalid fields in the form.
-	// e.values: An object containing the current values of all form fields.
-	// e.reset: A function that resets the form to its initial state.
-	if (e.valid) {
-		handleSaveGeneralInfo(e.values);
-	}
-};
+//#endregion
 
+//#region Tab Management
 enum TabType {
 	GeneralInfo = 0,
 	Image = 1,
@@ -1258,6 +1265,7 @@ const handleTabChange = async (value: number) => {
 		await fetchReviews();
 	}
 };
+//#endregion
 
 //#region Send offer
 /**
@@ -1395,6 +1403,7 @@ const closeOfferDialog = (isSave: boolean = false) => {
 };
 //#endregion
 
+//#region Avatar Management
 /**
  * References for avatar menu and dialog functionality
  */
@@ -1458,7 +1467,9 @@ const handleUpload = () => {
 	input.click();
 };
 
-// #region Image Viewer
+//#endregion
+
+//#region Image Viewer
 /**
  * State for image viewer modal
  */
@@ -1475,7 +1486,7 @@ const openImageViewer = (index: number) => {
 };
 // #endregion
 
-// #region Video Viewer
+//#region Video Viewer
 /**
  * State for video viewer modal
  */
@@ -1492,6 +1503,7 @@ const openVideoViewer = (index: number) => {
 };
 // #endregion
 
+//#region Navigation
 /**
  * Navigate to the identity verification view
  */
@@ -1500,6 +1512,7 @@ const toVerifyIdentityView = () => {
 		name: "user-identity-verification",
 	});
 };
+// #endregion
 </script>
 
 <style lang="scss" scoped>
