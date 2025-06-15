@@ -504,93 +504,7 @@
 						/>
 					</TabPanel>
 					<TabPanel value="3">
-						<div class="reviews" @scroll="handleScroll">
-							<div v-for="review in reviews" :key="review.id" class="review-item">
-								<Card>
-									<template #header>
-										<div class="review-header">
-											<!-- Display MC info if it's McReviewClient, otherwise display Client info -->
-											<template v-if="isMcReviewClient(review)">
-												<img
-													:src="review.mc?.avatarUrl"
-													alt="mc avatar"
-													class="client-avatar"
-												/>
-												<div class="client-info">
-													<div class="client-name">
-														{{ review.mc?.nickName || review.mc?.fullName || "Unknown MC" }}
-													</div>
-													<div class="review-date" v-format-date="review.createdAt"></div>
-												</div>
-											</template>
-											<template v-else>
-												<img
-													:src="review.client?.avatarUrl"
-													alt="client avatar"
-													class="client-avatar"
-												/>
-												<div class="client-info">
-													<div class="client-name">
-														{{
-															review.client?.fullName ||
-															review.client?.nickName ||
-															"Unknown Client"
-														}}
-													</div>
-													<div class="review-date" v-format-date="review.createdAt"></div>
-												</div>
-											</template>
-										</div>
-									</template>
-									<template #content>
-										<div class="review-body" :class="{ collapsed: review.collapsed }">
-											<Rating v-model="review.overallPoint" readonly></Rating>
-											<div class="event-name">{{ review.contract?.eventName }}</div>
-											<div class="short-description mb-3">{{ review.shortDescription }}</div>
-
-											<!-- Display paymentPunctualPoint if it's McReviewClient -->
-											<template v-if="isMcReviewClient(review)">
-												<div
-													class="payment-punctual-point-wrapper flex align-center justify-between"
-												>
-													<div class="label">Thanh toán đúng hạn</div>
-													<Rating v-model="review.paymentPunctualPoint" readonly></Rating>
-												</div>
-											</template>
-											<!-- Display proPoint and attitudePoint if it's ClientReviewMc -->
-											<template v-else>
-												<div class="pro-point-wrapper flex align-center justify-between">
-													<div class="label">Kỹ năng chuyên môn</div>
-													<Rating v-model="review.proPoint" readonly></Rating>
-												</div>
-
-												<div class="attitude-point-wrapper flex align-center justify-between">
-													<div class="label">Tinh thần thái độ</div>
-													<Rating v-model="review.attitudePoint" readonly></Rating>
-												</div>
-											</template>
-
-											<div class="reliable-point-wrapper flex align-center justify-between">
-												<div class="label">Độ tin cậy</div>
-												<Rating v-model="review.reliablePoint" readonly></Rating>
-											</div>
-
-											<p>{{ review.detailDescription }}</p>
-										</div>
-										<div
-											v-if="review.collapsed"
-											class="view-more-button"
-											@click="review.collapsed = false"
-										>
-											Xem thêm
-										</div>
-									</template>
-								</Card>
-							</div>
-							<!-- <div v-if="!hasMoreReviews" class="no-more-reviews">
-								<p>Không có đánh giá</p>
-							</div> -->
-						</div>
+						<MProfileReview ref="profileReviewRef" :userId="user?.id" :isMc="user.isMc" />
 					</TabPanel>
 				</TabPanels>
 			</Tabs>
@@ -639,15 +553,10 @@ import type { Media } from "@/entities/user/media";
 import { MediaType } from "@/enums/mediaType";
 import { EntityState } from "@/enums/entityState";
 import { useAuthStore } from "@/stores/authStore";
-import { clientReviewMcApi } from "@/apis/clientReviewMcApi";
-import type { ClientReviewMc } from "@/entities/clientReviewMc";
-import type { ClientReviewMcPagedRequest } from "@/entities/user/paging/clientReviewMcPagedRequest";
 import MMediaViewer from "@/components/MMediaViewer.vue";
 import MSendOfferDialog from "@/components/MSendOfferDialog.vue";
+import MProfileReview from "@/components/MProfileReview.vue";
 import draggable from "vuedraggable";
-import type { McReviewClient } from "@/entities/mcReviewClient";
-import type { McReviewClientPagedRequest } from "@/entities/user/paging/mcReviewClientPagedRequest";
-import { mcReviewClientApi } from "@/apis/mcReviewClientApi";
 
 //#region Constants and Variables
 const toast = useToast();
@@ -983,160 +892,6 @@ const onAddVideoClick = () => {
 };
 //#endregion
 
-//#region Review Tab Panel Logic
-interface BaseReview {
-	id: number;
-	clientId?: number;
-	mcId?: number;
-	contractId?: number;
-	shortDescription?: string;
-	detailDescription: string;
-	overallPoint: number;
-	reliablePoint: number;
-	createdAt: Date;
-	collapsed: boolean;
-	contract?: any;
-	client?: any;
-	mc?: any;
-	entityState?: EntityState;
-}
-
-interface ClientReviewWithType extends BaseReview {
-	type: "ClientReviewMc";
-	proPoint: number;
-	attitudePoint: number;
-}
-
-interface McReviewWithType extends BaseReview {
-	type: "McReviewClient";
-	paymentPunctualPoint: number;
-}
-
-type ReviewWithType = ClientReviewWithType | McReviewWithType;
-
-const reviews = ref<ReviewWithType[]>([]);
-const reviewPage = ref(0);
-const reviewPageSize = 10;
-const hasMoreReviews = ref(true);
-const isLoadingReviews = ref(false);
-
-const isMcReviewClient = (review: ReviewWithType): review is ReviewWithType & { type: "McReviewClient" } => {
-	return review.type === "McReviewClient";
-};
-
-/**
- * Fetches Reviews with Pagination
- *
- * Loads reviews for the current user profile with infinite scroll support:
- * - Handles both MC and client review types
- * - Implements pagination with specified page size
- * - Manages loading states to prevent duplicate requests
- * - Adds collapse state to reviews for expandable view
- * - Includes related contract and user data
- *
- * @returns {Promise<void>}
- * created by tqcong 20/5/2025.
- */
-const fetchReviews = async () => {
-	if (!hasMoreReviews.value || isLoadingReviews.value) return;
-
-	isLoadingReviews.value = true;
-
-	try {
-		let response;
-		if (user.value.isMc) {
-			const pagedRequest: ClientReviewMcPagedRequest = {
-				pageIndex: reviewPage.value,
-				pageSize: reviewPageSize,
-				mcId: userId,
-				isUseProc: true,
-				isGetContract: true,
-				isGetMc: true,
-				isGetClient: true,
-			};
-			const clientReviews = await clientReviewMcApi.getPaged(pagedRequest);
-			response = {
-				items: clientReviews.items.map((item: ClientReviewMc) => ({
-					id: item.id,
-					clientId: item.clientId,
-					mcId: item.mcId,
-					contractId: item.contractId,
-					shortDescription: item.shortDescription,
-					detailDescription: item.detailDescription,
-					overallPoint: item.overallPoint,
-					reliablePoint: item.reliablePoint,
-					createdAt: item.createdAt,
-					contract: item.contract,
-					client: item.client,
-					mc: item.mc,
-					collapsed: true,
-					type: "ClientReviewMc" as const,
-					proPoint: item.proPoint,
-					attitudePoint: item.attitudePoint,
-					entityState: item.entityState,
-				})) as ClientReviewWithType[],
-			};
-		} else {
-			const pagedRequest: McReviewClientPagedRequest = {
-				pageIndex: reviewPage.value,
-				pageSize: reviewPageSize,
-				clientId: userId,
-				isUseProc: true,
-				isGetContract: true,
-				isGetMc: true,
-				isGetClient: true,
-			};
-			const mcReviews = await mcReviewClientApi.getPaged(pagedRequest);
-			response = {
-				items: mcReviews.items.map((item: McReviewClient) => ({
-					id: item.id,
-					clientId: item.clientId,
-					mcId: item.mcId,
-					contractId: item.contractId,
-					shortDescription: item.shortDescription,
-					detailDescription: item.detailDescription,
-					overallPoint: item.overallPoint,
-					reliablePoint: item.reliablePoint,
-					createdAt: item.createdAt,
-					contract: item.contract,
-					client: item.client,
-					mc: item.mc,
-					collapsed: true,
-					type: "McReviewClient" as const,
-					paymentPunctualPoint: item.paymentPunctualPoint,
-					entityState: item.entityState,
-				})) as McReviewWithType[],
-			};
-		}
-
-		if (response.items.length < reviewPageSize) {
-			hasMoreReviews.value = false;
-		}
-
-		const newReviews = response.items as ReviewWithType[];
-		reviews.value = [...reviews.value, ...newReviews];
-		reviewPage.value++;
-	} catch (error) {
-		console.error("Error fetching reviews:", error);
-		toast.add({
-			severity: "error",
-			summary: "Lỗi",
-			detail: "Không thể tải đánh giá",
-			life: 3000,
-		});
-	} finally {
-		isLoadingReviews.value = false;
-	}
-};
-const handleScroll = (event: Event) => {
-	const target = event.target as HTMLElement;
-	const bottom = target.scrollHeight - target.scrollTop === target.clientHeight;
-	if (bottom) {
-		fetchReviews();
-	}
-};
-
-//#endregion
 /**
  * Sets Current User Profile Data
  *
@@ -1199,7 +954,7 @@ const handleTabChange = async (value: number) => {
 	} else if (value == TabType.Video && user.value.isMc) {
 		await fetchVideos();
 	} else if (value == TabType.Review) {
-		await fetchReviews();
+		await profileReviewRef.value?.fetchReviews();
 	}
 };
 //#endregion
@@ -1340,6 +1095,8 @@ const toVerifyIdentityView = () => {
 	});
 };
 // #endregion
+
+const profileReviewRef = ref<InstanceType<typeof MProfileReview>>();
 </script>
 
 <style lang="scss" scoped>
@@ -1590,60 +1347,6 @@ section.top {
 		width: 100%;
 		margin-top: 24px;
 	}
-}
-
-.review-item {
-	margin-bottom: 16px;
-}
-
-.review-header {
-	display: flex;
-	align-items: center;
-	padding: var(--p-card-body-padding);
-	padding-bottom: 0;
-
-	.client-avatar {
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-		margin-right: 12px;
-		object-fit: cover;
-	}
-
-	.client-info {
-		.client-name {
-			font-weight: 500;
-		}
-
-		.review-date {
-			font-size: 0.875rem;
-			color: #888;
-		}
-	}
-}
-
-.review-body {
-	margin-bottom: 12px;
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
-
-.review-body.collapsed {
-	max-height: 50vh;
-	overflow: hidden;
-	position: relative;
-}
-
-.reviews {
-	max-height: 80vh;
-	overflow-y: auto;
-	padding-right: 16px;
-}
-
-.view-more-button {
-	text-decoration: underline;
-	cursor: pointer;
 }
 
 .drag-handle {
