@@ -9,7 +9,14 @@ export function useRedirect() {
 		}
 	};
 
+	const redirectToIdVerification = () => {
+		router.push({
+			name: "user-identity-verification",
+		});
+	};
+
 	return {
 		redirectToProfile,
+		redirectToIdVerification,
 	};
 }

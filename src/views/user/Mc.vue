@@ -52,7 +52,7 @@
 					type="button"
 					label="Xác thực danh tính"
 					severity="primary"
-					@click="toVerifyIdentityView"
+					@click="redirectToIdVerification"
 					v-if="hasEditPermission && !user.isVerified"
 				></Button>
 			</div>
@@ -111,103 +111,19 @@
 						/>
 					</TabPanel>
 					<TabPanel value="1">
-						<div v-if="editingMode == EditingMode.Update" class="update-image-wrapper">
-							<div class="header">
-								<Button icon="pi pi-arrow-left" @click="cancelEditImages" class="back-button" />
-								<h3 class="title">Chỉnh sửa ảnh</h3>
-							</div>
-							<draggable
-								v-model="images"
-								class="image-list"
-								@end="handleDragEnd"
-								item-key="id"
-								handle=".drag-handle"
-							>
-								<template #item="{ element: image, index }">
-									<div class="image-item">
-										<i class="pi pi-bars drag-handle"></i>
-										<img :src="image.url" alt="" class="thumbnail" />
-										<div class="actions">
-											<Button
-												icon="pi pi-trash"
-												@click="deleteImage(index)"
-												class="delete-button"
-											/>
-										</div>
-									</div>
-								</template>
-							</draggable>
-							<Button
-								icon="pi pi-plus"
-								label="Thêm ảnh"
-								@click="onAddImageClick"
-								class="add-image-button"
-							/>
-						</div>
-						<div v-else class="gallery row gx-2 gy-2">
-							<div
-								class="gallery-item img-parent col-6"
-								v-for="(image, index) in sortedImages"
-								:key="image.id"
-								@click="openImageViewer(index)"
-							>
-								<img :src="image.url" alt="" />
-							</div>
-						</div>
-						<MMediaViewer
-							v-model:visible="isImageViewerVisible"
-							:medias="sortedImages"
-							:initial-index="selectedImageIndex"
+						<MProfileMediaGallery
+							ref="profileImageRef"
+							v-model:editing-mode="editingMode"
+							:media-type="MediaType.Image"
+							:user-id="userId"
 						/>
 					</TabPanel>
 					<TabPanel value="2">
-						<div v-if="editingMode == EditingMode.Update" class="update-video-wrapper">
-							<div class="header">
-								<Button icon="pi pi-arrow-left" @click="cancelEditVideos" class="back-button" />
-								<h3 class="title">Chỉnh sửa video</h3>
-							</div>
-							<draggable
-								v-model="videos"
-								class="video-list"
-								@end="handleVideoDragEnd"
-								item-key="id"
-								handle=".drag-handle"
-							>
-								<template #item="{ element: video, index }">
-									<div class="video-item">
-										<i class="pi pi-bars drag-handle"></i>
-										<video :src="video.url" class="thumbnail" />
-										<div class="actions">
-											<Button
-												icon="pi pi-trash"
-												@click="deleteVideo(index)"
-												class="delete-button"
-											/>
-										</div>
-									</div>
-								</template>
-							</draggable>
-							<Button
-								icon="pi pi-plus"
-								label="Thêm video"
-								@click="onAddVideoClick"
-								class="add-video-button"
-							/>
-						</div>
-						<div v-else class="gallery row gx-2 gy-2">
-							<div
-								class="gallery-item img-parent col-6"
-								v-for="(video, index) in sortedVideos"
-								:key="video.id"
-								@click="openVideoViewer(index)"
-							>
-								<video :src="video.url" class="thumbnail" />
-							</div>
-						</div>
-						<MMediaViewer
-							v-model:visible="isVideoViewerVisible"
-							:medias="sortedVideos"
-							:initial-index="selectedVideoIndex"
+						<MProfileMediaGallery
+							ref="profileVideoRef"
+							v-model:editing-mode="editingMode"
+							:media-type="MediaType.Video"
+							:user-id="userId"
 						/>
 					</TabPanel>
 					<TabPanel value="3">
@@ -240,29 +156,30 @@
 <script setup lang="ts">
 import { useToast } from "primevue/usetoast";
 import { onMounted, ref, computed } from "vue";
-import cloneDeep from "lodash/cloneDeep";
 import { type User } from "@/entities/user/user";
 import { EditingMode } from "@/enums/editingMode";
 import { userApi } from "@/apis/userApi";
 import { useRoute, useRouter } from "vue-router";
-import { mediaApi } from "@/apis/mediaApi";
-import type { Media } from "@/entities/user/media";
 import { MediaType } from "@/enums/mediaType";
-import { EntityState } from "@/enums/entityState";
 import { useAuthStore } from "@/stores/authStore";
-import MMediaViewer from "@/components/MMediaViewer.vue";
 import MSendOfferDialog from "@/components/MSendOfferDialog.vue";
 import MProfileReview from "@/components/MProfileReview.vue";
-import draggable from "vuedraggable";
 import MProfileGeneralInfo from "@/components/MProfileGeneralInfo.vue";
+import MProfileMediaGallery from "@/components/MProfileMediaGallery.vue";
+import { useRedirect } from "@/composables/useRedirect";
 
 //#region Constants and Variables
 const toast = useToast();
 const route = useRoute();
-const router = useRouter();
 const userId = Number(route.params.id);
 const routeTabIndex = Number(route.params.tabIndex);
 const authStore = useAuthStore();
+const { redirectToIdVerification } = useRedirect();
+
+const profileReviewRef = ref<InstanceType<typeof MProfileReview>>();
+const profileGeneralInfoRef = ref<InstanceType<typeof MProfileGeneralInfo>>();
+const profileImageRef = ref<InstanceType<typeof MProfileMediaGallery>>();
+const profileVideoRef = ref<InstanceType<typeof MProfileMediaGallery>>();
 
 // user của profile hiện tại
 const user = ref<User>({ isMc: true });
@@ -292,176 +209,6 @@ const handleSaveGeneralInfoSuccessful = async () => {
 	await setUser();
 };
 
-//#endregion
-
-//#region Media Management
-const images = ref<Media[]>([]);
-const initialImages = ref<Media[]>([]);
-
-/**
- * Sorted list of images by sort order (descending)
- * Creates a new sorted array to maintain reactivity
- */
-const sortedImages = computed(() => {
-	return [...images.value].sort((a, b) => b.sortOrder - a.sortOrder);
-});
-
-const deleteImage = async (index: number) => {
-	const imageToDelete = images.value[index];
-	images.value.splice(index, 1);
-	await mediaApi.delete(imageToDelete.id);
-	toast.add({ severity: "success", summary: "Đã xóa ảnh thành công", life: 3000 });
-};
-
-const handleDragEnd = async () => {
-	// Reassign sort orders based on new positions
-	images.value.forEach((image, index) => {
-		image.sortOrder = images.value.length - index;
-	});
-
-	// Prepare payload with all updated images
-	const payload = {
-		id: userId,
-		medias: images.value.map((image) => ({
-			...image,
-			entityState: EntityState.Update,
-		})),
-	};
-
-	// Update in backend
-	await userApi.update(userId, payload);
-	toast.add({ severity: "success", summary: "Đã sắp xếp lại ảnh thành công", life: 3000 });
-};
-
-const cancelEditImages = () => {
-	editingMode.value = EditingMode.None;
-};
-
-const fetchImages = async () => {
-	const imagesFromApi = await mediaApi.getMediasByUserId(userId, MediaType.Image);
-	images.value = imagesFromApi;
-	initialImages.value = cloneDeep(imagesFromApi);
-};
-
-const onAddImageClick = () => {
-	const input = document.createElement("input");
-	input.type = "file";
-	input.accept = "image/*,image/heic,image/heif";
-	input.onchange = async (event: Event) => {
-		const target = event.target as HTMLInputElement;
-		if (target.files && target.files.length > 0) {
-			try {
-				const file = target.files[0];
-				const newMedia: Media = {
-					id: 0, // Assuming the backend will generate the ID
-					userId: userId,
-					type: MediaType.Image,
-					url: "",
-					sortOrder: images.value.length + 1,
-					file: file, // Include the file to upload
-					entityState: EntityState.Add,
-				};
-
-				const response = await mediaApi.upload(newMedia);
-
-				const updatedMedias = await mediaApi.getMediasByUserId(userId, MediaType.Image);
-				updatedMedias.forEach((item: Media) => {
-					if (images.value.every((i) => i.id != item.id)) {
-						images.value.push(item);
-					}
-				});
-				//sort images by sortorder descending
-				images.value.sort((a, b) => b.sortOrder - a.sortOrder);
-			} catch (error) {
-				console.error("Error fetching images:", error);
-			}
-		}
-	};
-	input.click();
-};
-//#endregion
-
-//#region Video Tab Panel Logic
-const videos = ref<Media[]>([]);
-const initialVideos = ref<Media[]>([]);
-
-/**
- * Sorted list of videos by sort order (descending)
- * Creates a new sorted array to maintain reactivity
- */
-const sortedVideos = computed(() => {
-	return [...videos.value].sort((a, b) => b.sortOrder - a.sortOrder);
-});
-
-const deleteVideo = async (index: number) => {
-	const videoToDelete = videos.value[index];
-	videos.value.splice(index, 1);
-	await mediaApi.delete(videoToDelete.id);
-	toast.add({ severity: "success", summary: "Đã xóa video thành công", life: 3000 });
-};
-
-const handleVideoDragEnd = async () => {
-	// Reassign sort orders based on new positions
-	videos.value.forEach((video, index) => {
-		video.sortOrder = videos.value.length - index;
-	});
-
-	// Prepare payload with all updated videos
-	const payload = {
-		id: userId,
-		medias: videos.value.map((video) => ({
-			...video,
-			entityState: EntityState.Update,
-		})),
-	};
-
-	// Update in backend
-	await userApi.update(userId, payload);
-	toast.add({ severity: "success", summary: "Đã sắp xếp lại video thành công", life: 3000 });
-};
-
-const cancelEditVideos = () => {
-	editingMode.value = EditingMode.None;
-};
-
-const fetchVideos = async () => {
-	const videosFromApi = await mediaApi.getMediasByUserId(userId, MediaType.Video);
-	videos.value = videosFromApi;
-	initialVideos.value = cloneDeep(videosFromApi);
-};
-
-const onAddVideoClick = () => {
-	const input = document.createElement("input");
-	input.type = "file";
-	input.accept = "video/*,video/quicktime";
-	input.onchange = async (event: Event) => {
-		const target = event.target as HTMLInputElement;
-		if (target.files && target.files.length > 0) {
-			const file = target.files[0];
-			const newMedia: Media = {
-				id: 0, // Assuming the backend will generate the ID
-				userId: userId,
-				type: MediaType.Video,
-				url: "",
-				sortOrder: videos.value.length + 1,
-				file: file, // Include the file to upload
-				entityState: EntityState.Add,
-			};
-
-			const response = await mediaApi.upload(newMedia);
-
-			const updatedMedias = await mediaApi.getMediasByUserId(userId, MediaType.Video);
-			updatedMedias.forEach((item: Media) => {
-				if (videos.value.every((i) => i.id != item.id)) {
-					videos.value.push(item);
-				}
-			});
-			//sort videos by sortorder descending
-			videos.value.sort((a, b) => b.sortOrder - a.sortOrder);
-		}
-	};
-	input.click();
-};
 //#endregion
 
 /**
@@ -522,9 +269,9 @@ const handleTabChange = async (value: number) => {
 	} else if (value == TabType.Review) {
 		await profileReviewRef.value?.fetchReviews();
 	} else if (value == TabType.Image && user.value.isMc) {
-		await fetchImages();
+		await profileImageRef.value?.fetchMedias(MediaType.Image);
 	} else if (value == TabType.Video && user.value.isMc) {
-		await fetchVideos();
+		await profileVideoRef.value?.fetchMedias(MediaType.Video);
 	}
 };
 //#endregion
@@ -580,7 +327,7 @@ const avatarMenuItems = [
 		label: "Tải lên",
 		icon: "pi pi-upload",
 		command: () => {
-			handleUpload();
+			handleUploadAvatar();
 		},
 	},
 ];
@@ -604,7 +351,7 @@ const showAvatarMenu = (event: any) => {
  * - Uploads to server
  * - Updates avatar URL in UI
  */
-const handleUpload = () => {
+const handleUploadAvatar = () => {
 	const input = document.createElement("input");
 	input.type = "file";
 	input.accept = "image/*";
@@ -620,54 +367,6 @@ const handleUpload = () => {
 };
 
 //#endregion
-
-//#region Image Viewer
-/**
- * State for image viewer modal
- */
-const isImageViewerVisible = ref(false);
-const selectedImageIndex = ref(0);
-
-/**
- * Opens the image viewer modal at specified index
- * @param {number} index - Index of image to display
- */
-const openImageViewer = (index: number) => {
-	selectedImageIndex.value = index;
-	isImageViewerVisible.value = true;
-};
-// #endregion
-
-//#region Video Viewer
-/**
- * State for video viewer modal
- */
-const isVideoViewerVisible = ref(false);
-const selectedVideoIndex = ref(0);
-
-/**
- * Opens the video viewer modal at specified index
- * @param {number} index - Index of video to display
- */
-const openVideoViewer = (index: number) => {
-	selectedVideoIndex.value = index;
-	isVideoViewerVisible.value = true;
-};
-// #endregion
-
-//#region Navigation
-/**
- * Navigate to the identity verification view
- */
-const toVerifyIdentityView = () => {
-	router.push({
-		name: "user-identity-verification",
-	});
-};
-// #endregion
-
-const profileReviewRef = ref<InstanceType<typeof MProfileReview>>();
-const profileGeneralInfoRef = ref<InstanceType<typeof MProfileGeneralInfo>>();
 </script>
 
 <style lang="scss" scoped>
@@ -732,19 +431,7 @@ section.top {
 				font-weight: 700;
 				flex-shrink: 0;
 			}
-
-			.verify-identity {
-				text-decoration: underline;
-				cursor: pointer;
-			}
 		}
-	}
-}
-
-//anh & video
-.gallery-item {
-	img {
-		border-radius: 4px;
 	}
 }
 
@@ -753,154 +440,5 @@ section.top {
 	bottom: 5rem;
 	right: 2rem;
 	background: #fff;
-}
-
-.update-image-wrapper {
-	.header {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		position: relative;
-		margin-bottom: 16px;
-
-		.back-button {
-			position: absolute;
-			left: 0;
-		}
-
-		.title {
-			font-size: 1.5rem;
-			font-weight: bold;
-		}
-
-		.save-button {
-			position: absolute;
-			right: 0;
-		}
-	}
-
-	.image-list {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-
-		.image-item {
-			display: flex;
-			align-items: center;
-			gap: 16px;
-
-			.thumbnail {
-				width: 80px;
-				height: 80px;
-				object-fit: cover;
-				border-radius: 4px;
-			}
-
-			.actions {
-				margin-left: auto;
-				display: flex;
-				gap: 8px;
-
-				.delete-button,
-				.move-up-button,
-				.move-down-button {
-					background: none;
-					border: none;
-					cursor: pointer;
-					color: #000;
-				}
-			}
-		}
-	}
-
-	.add-image-button {
-		width: 100%;
-		margin-top: 24px;
-	}
-}
-
-.update-image-wrapper {
-	display: flex;
-	flex-direction: column;
-}
-
-.update-video-wrapper {
-	.header {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		position: relative;
-		margin-bottom: 16px;
-
-		.back-button {
-			position: absolute;
-			left: 0;
-		}
-
-		.title {
-			font-size: 1.5rem;
-			font-weight: bold;
-		}
-
-		.save-button {
-			position: absolute;
-			right: 0;
-		}
-	}
-
-	.video-list {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-
-		.video-item {
-			display: flex;
-			align-items: center;
-			gap: 16px;
-
-			.thumbnail {
-				width: 80px;
-				height: 80px;
-				object-fit: cover;
-			}
-
-			.actions {
-				margin-left: auto;
-				display: flex;
-				gap: 8px;
-
-				.delete-button,
-				.move-up-button,
-				.move-down-button {
-					background: none;
-					border: none;
-					cursor: pointer;
-					color: #000;
-				}
-			}
-		}
-	}
-
-	.add-video-button {
-		width: 100%;
-		margin-top: 24px;
-	}
-}
-
-.drag-handle {
-	cursor: move;
-	padding: 8px;
-	color: #666;
-
-	&:hover {
-		color: #000;
-	}
-}
-
-.thumbnail {
-	width: 100%;
-	height: auto;
-	object-fit: cover;
-	cursor: pointer;
 }
 </style>
