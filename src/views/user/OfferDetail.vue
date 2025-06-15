@@ -14,6 +14,8 @@
 					</div>
 				</template>
 				<span class="view-client-reviews" @click="toClientReviewTab">Thông tin đánh giá về khách hàng</span>
+
+				<!-- Offer Information Display -->
 				<div class="info-container" v-if="additionalInfo">
 					<div class="info-item">
 						<label>Tên sự kiện:</label>
@@ -36,6 +38,8 @@
 						<div class="value">{{ additionalInfo.note }}</div>
 					</div>
 				</div>
+
+				<!-- Action Buttons -->
 				<div class="button-container" v-if="notification?.status === NotificationStatus.Editable">
 					<Button label="Từ chối" class="p-button-danger" @click="handleReject" />
 					<Button label="Đồng ý" class="p-button-success" @click="handleApprove" />
@@ -43,9 +47,9 @@
 			</Fieldset>
 		</main>
 
+		<!-- Dialogs -->
 		<ConfirmDialog></ConfirmDialog>
 
-		<!-- Time Conflict Dialog -->
 		<Dialog
 			v-model:visible="showTimeConflictDialog"
 			modal
@@ -73,35 +77,43 @@ import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
+
+// API & Store imports
 import { notificationApi } from "@/apis/notificationApi";
 import { contractApi } from "@/apis/contractApi";
-import { useRedirect } from "@/composables/useRedirect";
 import { useAuthStore } from "@/stores/authStore";
+import { useRedirect } from "@/composables/useRedirect";
+
+// Type & Enum imports
 import type { Notification } from "@/entities/notification";
 import type { Contract } from "@/entities/contract";
-import type { SendOfferAdditionalInfo } from "@/entities/notification/additionalInfo/sendOfferAdditionalInfo";
-import type { RejectOfferAdditionalInfo } from "@/entities/notification/additionalInfo/rejectOfferAdditionalInfo";
-import type { OfferApprovedAdditionalInfo } from "@/entities/notification/additionalInfo/offerApprovedAdditionalInfo";
 import type { ApiErrorResponse } from "@/entities/api/apiErrorResponse";
 import type { TimeConflictEventInfo } from "@/entities/contract/timeConflictEventInfo";
+import type {
+	SendOfferAdditionalInfo,
+	RejectOfferAdditionalInfo,
+	OfferApprovedAdditionalInfo,
+} from "@/entities/notification/additionalInfo";
 import { NotificationStatus } from "@/enums/notificationStatus";
 import { NotificationType } from "@/enums/notificationType";
 
-const authStore = useAuthStore();
-const route = useRoute();
-const router = useRouter();
-const { redirectToProfile } = useRedirect();
+//#region State Management
 const notification = ref<Notification | null>(null);
 const additionalInfo = ref<SendOfferAdditionalInfo | null>(null);
-const toast = useToast();
-const confirm = useConfirm();
-
-// Dialog related refs
 const showTimeConflictDialog = ref(false);
 const conflictMessage = ref("");
 const conflictEventName = ref("");
 const conflictContractId = ref<number | null>(null);
 
+const authStore = useAuthStore();
+const route = useRoute();
+const router = useRouter();
+const { redirectToProfile } = useRedirect();
+const toast = useToast();
+const confirm = useConfirm();
+//#endregion
+
+//#region Data Loading
 const fetchNotificationDetails = async (id: string) => {
 	try {
 		const response = await notificationApi.getById(parseInt(id));
@@ -113,7 +125,9 @@ const fetchNotificationDetails = async (id: string) => {
 		router.push({ name: "user-notification-list" });
 	}
 };
+//#endregion
 
+//#region Offer Actions
 const handleReject = async () => {
 	try {
 		if (additionalInfo.value?.senderId) {
@@ -139,6 +153,7 @@ const handleReject = async () => {
 				});
 			}
 		}
+
 		router.push({ name: "user-notification-list" });
 		toast.add({
 			severity: "success",
@@ -153,20 +168,6 @@ const handleReject = async () => {
 			summary: "Lỗi",
 			detail: "Không thể từ chối yêu cầu",
 			life: 3000,
-		});
-	}
-};
-
-const hideTimeConflictDialog = () => {
-	showTimeConflictDialog.value = false;
-};
-
-const goToConflictingContract = () => {
-	if (conflictContractId.value) {
-		hideTimeConflictDialog();
-		router.push({
-			name: "user-contract-detail",
-			params: { id: conflictContractId.value },
 		});
 	}
 };
@@ -189,119 +190,136 @@ const handleApprove = async () => {
 		};
 
 		try {
-			const newContract = await contractApi.create(contract);
-			await notificationApi.create({
-				id: 0,
-				userId: additionalInfo.value.senderId,
-				type: NotificationType.OfferApproved,
-				message: `Offer cho sự kiện ${additionalInfo.value.eventName} của bạn đã được chấp nhận.`,
-				thumbUrl: authStore.user?.avatarUrl,
-				additionalInfo: JSON.stringify({
-					contractId: newContract.id,
-				} as OfferApprovedAdditionalInfo),
-				isRead: false,
-				entityState: 0,
-			} as Notification);
-
-			if (notification.value) {
-				await notificationApi.update(notification.value.id, {
-					...notification.value,
-					status: NotificationStatus.NotEditable,
-				});
-			}
-
-			router.push({ name: "user-contract-list" });
-			toast.add({
-				severity: "success",
-				summary: "Thành công",
-				detail: "Đã chấp nhận yêu cầu của khách hàng",
-				life: 3000,
-			});
+			await createContractAndNotify(contract);
 		} catch (error: any) {
-			const errorResponse = error.response?.data as ApiErrorResponse;
-
-			if (error.response?.status === 409) {
-				// Time conflict
-				const conflictEvent = errorResponse.additionalInfo[0] as TimeConflictEventInfo;
-				conflictMessage.value = errorResponse.message;
-				conflictEventName.value = conflictEvent.eventName;
-				conflictContractId.value = conflictEvent.contractId;
-				showTimeConflictDialog.value = true;
-
-				return;
-			}
-
-			if (error.response?.status === 430) {
-				// Buffer warning
-				confirm.require({
-					header: "Cảnh báo",
-					message: errorResponse.message,
-					acceptLabel: "Có",
-					rejectLabel: "Không",
-					acceptClass: "p-button-primary",
-					rejectClass: "p-button-secondary",
-					accept: async () => {
-						try {
-							contract.isIgnoreBufferCheck = true;
-							const newContract = await contractApi.create(contract);
-							await notificationApi.create({
-								id: 0,
-								userId: additionalInfo.value!.senderId,
-								type: NotificationType.OfferApproved,
-								message: `Offer cho sự kiện ${
-									additionalInfo.value!.eventName
-								} của bạn đã được chấp nhận.`,
-								thumbUrl: authStore.user?.avatarUrl,
-								additionalInfo: JSON.stringify({
-									contractId: newContract.id,
-								} as OfferApprovedAdditionalInfo),
-								isRead: false,
-								entityState: 0,
-							} as Notification);
-
-							if (notification.value) {
-								await notificationApi.update(notification.value.id, {
-									...notification.value,
-									status: NotificationStatus.NotEditable,
-								});
-							}
-
-							router.push({ name: "user-contract-list" });
-							toast.add({
-								severity: "success",
-								summary: "Thành công",
-								detail: "Đã chấp nhận yêu cầu của khách hàng",
-								life: 3000,
-							});
-						} catch (retryError) {
-							console.error("Failed to approve the offer", retryError);
-							toast.add({
-								severity: "error",
-								summary: "Lỗi",
-								detail: "Không thể chấp nhận yêu cầu của khách hàng",
-								life: 3000,
-							});
-						}
-					},
-				});
-				return;
-			}
-
-			console.error("Failed to approve the offer", error);
-			toast.add({
-				severity: "error",
-				summary: "Lỗi",
-				detail: "Không thể chấp nhận yêu cầu của khách hàng",
-				life: 3000,
-			});
+			handleApprovalError(error, contract);
 		}
 	} catch (error) {
 		console.error("Failed to approve the offer", error);
-		toast.add({
-			severity: "error",
-			summary: "Lỗi",
-			detail: "Không thể chấp nhận yêu cầu của khách hàng",
-			life: 3000,
+		showErrorToast();
+	}
+};
+
+const createContractAndNotify = async (contract: Contract) => {
+	const newContract = await contractApi.create(contract);
+	await sendApprovalNotification(newContract.id);
+	await updateOriginalNotification();
+
+	router.push({ name: "user-contract-list" });
+	showSuccessToast();
+};
+//#endregion
+
+//#region Error Handling
+const handleApprovalError = async (error: any, contract: Contract) => {
+	const errorResponse = error.response?.data as ApiErrorResponse;
+
+	if (error.response?.status === 409) {
+		handleTimeConflict(errorResponse);
+		return;
+	}
+
+	if (error.response?.status === 430) {
+		handleBufferWarning(errorResponse, contract);
+		return;
+	}
+
+	console.error("Failed to approve the offer", error);
+	showErrorToast();
+};
+
+const handleTimeConflict = (errorResponse: ApiErrorResponse) => {
+	const conflictEvent = errorResponse.additionalInfo[0] as TimeConflictEventInfo;
+	conflictMessage.value = errorResponse.message;
+	conflictEventName.value = conflictEvent.eventName;
+	conflictContractId.value = conflictEvent.contractId;
+	showTimeConflictDialog.value = true;
+};
+
+const handleBufferWarning = (errorResponse: ApiErrorResponse, contract: Contract) => {
+	confirm.require({
+		header: "Cảnh báo",
+		message: errorResponse.message,
+		acceptLabel: "Có",
+		rejectLabel: "Không",
+		acceptClass: "p-button-primary",
+		rejectClass: "p-button-secondary",
+		accept: async () => {
+			try {
+				await retryContractCreation({ ...contract, isIgnoreBufferCheck: true });
+			} catch (retryError) {
+				console.error("Failed to approve the offer", retryError);
+				showErrorToast();
+			}
+		},
+	});
+};
+//#endregion
+
+//#region Helper Functions
+const sendApprovalNotification = async (contractId: number) => {
+	if (!additionalInfo.value) return;
+
+	await notificationApi.create({
+		id: 0,
+		userId: additionalInfo.value.senderId,
+		type: NotificationType.OfferApproved,
+		message: `Offer cho sự kiện ${additionalInfo.value.eventName} của bạn đã được chấp nhận.`,
+		thumbUrl: authStore.user?.avatarUrl,
+		additionalInfo: JSON.stringify({ contractId } as OfferApprovedAdditionalInfo),
+		isRead: false,
+		entityState: 0,
+	} as Notification);
+};
+
+const updateOriginalNotification = async () => {
+	if (notification.value) {
+		await notificationApi.update(notification.value.id, {
+			...notification.value,
+			status: NotificationStatus.NotEditable,
+		});
+	}
+};
+
+const retryContractCreation = async (contract: Contract) => {
+	const newContract = await contractApi.create(contract);
+	await sendApprovalNotification(newContract.id);
+	await updateOriginalNotification();
+
+	router.push({ name: "user-contract-list" });
+	showSuccessToast();
+};
+
+const showSuccessToast = () => {
+	toast.add({
+		severity: "success",
+		summary: "Thành công",
+		detail: "Đã chấp nhận yêu cầu của khách hàng",
+		life: 3000,
+	});
+};
+
+const showErrorToast = () => {
+	toast.add({
+		severity: "error",
+		summary: "Lỗi",
+		detail: "Không thể chấp nhận yêu cầu của khách hàng",
+		life: 3000,
+	});
+};
+//#endregion
+
+//#region Navigation
+const hideTimeConflictDialog = () => {
+	showTimeConflictDialog.value = false;
+};
+
+const goToConflictingContract = () => {
+	if (conflictContractId.value) {
+		hideTimeConflictDialog();
+		router.push({
+			name: "user-contract-detail",
+			params: { id: conflictContractId.value },
 		});
 	}
 };
@@ -315,7 +333,9 @@ const toClientReviewTab = () => {
 		},
 	});
 };
+//#endregion
 
+//#region Lifecycle Hooks
 onMounted(() => {
 	const id = route.params.id as string;
 	if (id) {
@@ -324,6 +344,7 @@ onMounted(() => {
 		router.push({ name: "user-notification-list" });
 	}
 });
+//#endregion
 </script>
 
 <style lang="scss" scoped>
@@ -350,6 +371,7 @@ onMounted(() => {
 		margin-right: 4px;
 		font-weight: 500;
 	}
+
 	.value {
 		font-weight: 500;
 	}

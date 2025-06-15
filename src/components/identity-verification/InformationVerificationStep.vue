@@ -14,8 +14,6 @@
 * - Responsive layout
 * - Status-based display
 * - Date formatting
-*
-* created by tqcong 20/5/2025.
 -->
 <template>
 	<div class="information-verification-step">
@@ -84,16 +82,6 @@
 						<InputText v-model="editableInfo.address" class="w-full" :disabled="!isEditing" />
 					</div>
 
-					<!-- <div class="info-field">
-						<label>Tôn giáo</label>
-						<InputText v-model="editableInfo.religion" class="w-full" :disabled="!isEditing" />
-					</div>
-
-					<div class="info-field">
-						<label>Dân tộc</label>
-						<InputText v-model="editableInfo.ethnicity" class="w-full" :disabled="!isEditing" />
-					</div> -->
-
 					<div class="info-field">
 						<label>Đặc điểm nhận dạng</label>
 						<InputText v-model="editableInfo.features" class="w-full" :disabled="!isEditing" />
@@ -139,7 +127,6 @@
 			<div v-if="!props.isVerified" class="flex justify-between mt-6">
 				<Button @click="$emit('back')" severity="secondary" label="Quay lại" />
 				<div class="flex gap-2">
-					<!-- <Button v-if="!isEditing" @click="startEditing" severity="secondary" label="Chỉnh sửa" /> -->
 					<Button v-if="isEditing" @click="cancelEditing" severity="secondary" label="Hủy" />
 					<Button
 						@click="isEditing ? saveChanges() : confirmInfo()"
@@ -153,91 +140,45 @@
 </template>
 
 <script setup lang="ts">
-/**
- * Information Verification Step Script
- *
- * Handles the display, validation, and editing of ID card information:
- * - Props for ID info and verification status
- * - Form validation
- * - Edit mode management
- * - Changes confirmation
- *
- * created by tqcong 20/5/2025.
- */
-
 import { ref, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import type { IdInfo } from "@/entities/idVerification";
 
-/**
- * Component props
- * @prop {IdInfo} idInfo - ID card information to display/edit
- * @prop {Date} verifiedAt - Verification timestamp
- * @prop {boolean} isVerified - Verification status
- * created by tqcong 20/5/2025.
- */
+//#region Props & Emits
 const props = defineProps<{
 	idInfo: IdInfo;
 	verifiedAt?: Date;
 	isVerified?: boolean;
 }>();
 
-/**
- * Component events
- * @event confirm - Emitted when user confirms information
- * @event back - Emitted when user wants to go back
- * created by tqcong 20/5/2025.
- */
 const emit = defineEmits<{
 	(e: "confirm"): void;
 	(e: "back"): void;
 }>();
+//#endregion
 
-/**
- * Component state
- * created by tqcong 20/5/2025.
- */
+//#region State
 const toast = useToast();
 const isEditing = ref(false);
 const editableInfo = ref<IdInfo>({ ...props.idInfo });
 
-/**
- * Enables edit mode
- * created by tqcong 20/5/2025.
- */
-const startEditing = () => {
-	isEditing.value = true;
-};
+// Define required fields for validation
+const requiredFields: (keyof IdInfo)[] = [
+	"idNumber",
+	"name",
+	"dob",
+	"sex",
+	"nationality",
+	"home",
+	"address",
+	"issueDate",
+	"issueLoc",
+	"doe",
+];
+//#endregion
 
-/**
- * Cancels edit mode and restores original values
- * created by tqcong 20/5/2025.
- */
-const cancelEditing = () => {
-	editableInfo.value = { ...props.idInfo };
-	isEditing.value = false;
-};
-
-/**
- * Validates form information
- * Checks for required fields and displays error message if missing
- * @returns {boolean} True if all required fields are filled
- * created by tqcong 20/5/2025.
- */
+//#region Form Validation
 const validateInfo = (): boolean => {
-	const requiredFields: (keyof IdInfo)[] = [
-		"idNumber",
-		"name",
-		"dob",
-		"sex",
-		"nationality",
-		"home",
-		"address",
-		"issueDate",
-		"issueLoc",
-		"doe",
-	];
-
 	const missingFields = requiredFields.filter((field) => !editableInfo.value[field]);
 
 	if (missingFields.length > 0) {
@@ -252,13 +193,18 @@ const validateInfo = (): boolean => {
 
 	return true;
 };
+//#endregion
 
-/**
- * Saves edited information
- * Validates form and updates parent component with new values
- * Shows success notification on completion
- * created by tqcong 20/5/2025.
- */
+//#region Edit Mode Handlers
+const startEditing = () => {
+	isEditing.value = true;
+};
+
+const cancelEditing = () => {
+	editableInfo.value = { ...props.idInfo };
+	isEditing.value = false;
+};
+
 const saveChanges = () => {
 	if (validateInfo()) {
 		Object.assign(props.idInfo, editableInfo.value);
@@ -271,26 +217,21 @@ const saveChanges = () => {
 		});
 	}
 };
+//#endregion
 
-/**
- * Validates and confirms information
- * Emits confirm event if validation passes
- * created by tqcong 20/5/2025.
- */
+//#region Form Submission
 const confirmInfo = () => {
 	if (validateInfo()) {
 		emit("confirm");
 	}
 };
+//#endregion
 
-/**
- * Component initialization
- * Sets up initial editable information from props
- * created by tqcong 20/5/2025.
- */
+//#region Lifecycle Hooks
 onMounted(() => {
 	editableInfo.value = { ...props.idInfo };
 });
+//#endregion
 </script>
 
 <style scoped>

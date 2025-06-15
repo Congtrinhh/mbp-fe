@@ -132,16 +132,7 @@
 	</main>
 </template>
 
-/** * MC List View Component * * This component provides a searchable and filterable list of MCs (Master of Ceremonies).
-* It implements infinite scrolling and advanced filtering capabilities for MC discovery. * * Key Features: * - Real-time
-search functionality * - Advanced filtering options (age, gender, style, etc.) * - Infinite scroll pagination * -
-Responsive grid layout * - Filter state management * * created by tqcong 20/5/2025. */
-
 <script setup lang="ts">
-/**
- * Core dependencies and types required for MC list functionality
- * created by tqcong 20/5/2025.
- */
 import { userApi } from "@/apis/userApi";
 import type { User } from "@/entities/user/user";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
@@ -154,36 +145,25 @@ import { useMcTypeStore } from "@/stores/mcTypeStore";
 import { useHostingStyleStore } from "@/stores/hostingStyleStore";
 import { getGenderDataSource } from "@/enums/gender";
 import InputText from "primevue/inputtext";
-import { debounce } from "lodash";
+import { debounce, isEqual } from "lodash";
 import type { UserPagedRequest } from "@/entities/user/paging/UserPagedRequest";
 import { useAuthStore } from "@/stores/authStore";
-import { isEqual } from "lodash";
 import { useAppStore } from "@/stores/appStore";
 
-/**
- * Filter Dialog State Management
- * Controls visibility of advanced filter dialog
- * created by tqcong 20/5/2025.
- */
-const isVisibleFilterDialog = ref(false);
-const showFilterDialog = () => {
-	isVisibleFilterDialog.value = true;
-};
-
+//#region Constants and Store Initialization
+const toast = useToast();
+const router = useRouter();
+const authStore = useAuthStore();
 const appStore = useAppStore();
 const appName = appStore.appName;
-
-/**
- * Form Configuration and Validation
- *
- * Sets up form validation rules and handling for the filter dialog.
- * Uses Zod schema validation to ensure data integrity.
- *
- * created by tqcong 20/5/2025.
- */
-const toast = useToast();
 const formRef = ref();
 
+// Store initializations
+const provinceStore = useProvinceStore();
+const hostingStyleStore = useHostingStyleStore();
+const mcTypeStore = useMcTypeStore();
+
+// Form validation schema
 const resolver = zodResolver(
 	z.object({
 		searchText: z.string().optional(),
@@ -196,7 +176,48 @@ const resolver = zodResolver(
 	})
 );
 
-const onFormSubmit = (formInfo) => {
+// Initial filter state
+const initialFilter = {
+	searchText: "",
+	genders: [],
+	areas: [],
+	hostingStyles: [],
+	mcTypes: [],
+	isNewbie: false,
+	ageRange: [18, 80],
+};
+//#endregion
+
+//#region State Management
+const isVisibleFilterDialog = ref(false);
+const isLoading = ref(false);
+const searchText = ref("");
+const users = ref<User[]>([]);
+const ageRange = ref([18, 80]);
+
+// Data sources
+const areas = ref(provinceStore.provinces);
+const hostingStyles = ref(hostingStyleStore.hostingStyles);
+const mcTypes = ref(mcTypeStore.mcTypes);
+const genders = ref(getGenderDataSource());
+
+// Filter states
+const filter = ref({ ...initialFilter });
+const hasFilter = computed(() => !isEqual(filter.value, initialFilter));
+
+let pagedRequest: UserPagedRequest = {
+	pageIndex: 0,
+	pageSize: 10,
+	sort: "credit DESC",
+	isMc: true,
+	isGetMcType: true,
+	isGetProvince: true,
+	isUseProc: true,
+};
+//#endregion
+
+//#region Form Operations
+const onFormSubmit = (formInfo: any) => {
 	const { valid, values } = formInfo;
 	if (valid) {
 		filter.value = values;
@@ -208,128 +229,28 @@ const onFormSubmit = (formInfo) => {
 	}
 };
 
-const genders = ref(getGenderDataSource());
-
-const ageRange = ref([18, 80]);
-
-const provinceStore = useProvinceStore();
-const areas = ref(provinceStore.provinces);
-
-const hostingStyleStore = useHostingStyleStore();
-const hostingStyles = ref(hostingStyleStore.hostingStyles);
-
-const mcTypeStore = useMcTypeStore();
-const mcTypes = ref(mcTypeStore.mcTypes);
-
-//#endregion
-
-/**
- * Filter State Management
- *
- * Manages the filter state and provides reset functionality.
- * Default values are set for all filter parameters.
- *
- * created by tqcong 20/5/2025.
- */
-const initialFilter = {
-	searchText: "",
-	genders: [],
-	areas: [],
-	hostingStyles: [],
-	mcTypes: [],
-	isNewbie: false,
-	ageRange: [18, 80],
-};
-
-const filter = ref({ ...initialFilter });
-
 const resetFilter = async () => {
 	filter.value = { ...initialFilter };
 	await nextTick();
 	ageRange.value = [18, 80];
 	searchText.value = "";
-	// formRef.value.reset();
+};
+
+const showFilterDialog = () => {
+	isVisibleFilterDialog.value = true;
 };
 //#endregion
 
-/**
- * Search Functionality
- *
- * Implements debounced search to prevent excessive API calls
- * while user is typing. Triggers data refresh when search
- * text changes.
- *
- * created by tqcong 20/5/2025.
- */
-const searchText = ref("");
-const debouncedSearchInput = debounce(() => {
-	pagedRequest.pageIndex = 0;
-	clearUsers();
-	rebuildPagedRequest();
-	loadMoreUsers();
-}, 500);
-//#endregion
-
-/**
- * Pagination and Data Loading Logic
- *
- * Handles infinite scroll pagination and data loading:
- * - Maintains list of loaded users
- * - Manages loading state
- * - Handles scroll events for infinite loading
- * - Rebuilds request parameters based on filters
- *
- * created by tqcong 20/5/2025.
- */
+//#region Data Loading
 const clearUsers = () => {
 	users.value = [];
 };
 
-const isLoading = ref(false);
-
-const rebuildPagedRequest = () => {
-	pagedRequest.pageIndex = 0;
-
-	const mcTypeIds = filter.value.mcTypes.map((mcType) => mcType.id).join(",");
-	const hostingStyleIds = filter.value.hostingStyles.map((style) => style.id).join(",");
-	const areaIds = filter.value.areas.map((area) => area.id).join(",");
-	const genders = filter.value.genders.map((gender) => gender.code).join(",");
-
-	const isNewbie = filter.value.isNewbie;
-
-	const ageRange = filter.value.ageRange;
-
-	pagedRequest = {
-		...pagedRequest,
-		nickName: searchText.value?.trim() || undefined,
-		mcTypeIds: mcTypeIds || undefined,
-		hostingStyleIds: hostingStyleIds || undefined,
-		provinceIds: areaIds || undefined,
-		genders: genders || undefined,
-		isNewbie: isNewbie === true ? isNewbie : undefined,
-		minAge: ageRange[0] || undefined,
-		maxAge: ageRange[1] || undefined,
-	};
-};
-
-/**
- * Loads additional users when scrolling
- *
- * This function:
- * 1. Checks if already loading to prevent duplicate requests
- * 2. Fetches next page of users based on current filters
- * 3. Appends new users to existing list
- * 4. Updates pagination state
- *
- * @returns {Promise<void>}
- * created by tqcong 20/5/2025.
- */
 const loadMoreUsers = async () => {
 	if (isLoading.value) return;
 	isLoading.value = true;
 
 	const pagedResponse = await userApi.getPaged(pagedRequest);
-
 	const newUsers = pagedResponse.items;
 	users.value.push(...newUsers);
 
@@ -337,71 +258,58 @@ const loadMoreUsers = async () => {
 	isLoading.value = false;
 };
 
-/**
- * Handles scroll events for infinite loading
- *
- * Detects when user has scrolled to bottom of the list
- * and triggers loading of more users if available.
- *
- * @param {Event} event - Scroll event object
- * created by tqcong 20/5/2025.
- */
+const debouncedSearchInput = debounce(() => {
+	pagedRequest.pageIndex = 0;
+	clearUsers();
+	rebuildPagedRequest();
+	loadMoreUsers();
+}, 500);
+
+const rebuildPagedRequest = () => {
+	pagedRequest.pageIndex = 0;
+
+	const mcTypeIds = filter.value.mcTypes?.map((mcType: any) => mcType.id).join(",");
+	const hostingStyleIds = filter.value.hostingStyles?.map((style: any) => style.id).join(",");
+	const areaIds = filter.value.areas?.map((area: any) => area.id).join(",");
+	const genderCodes = filter.value.genders?.map((gender: any) => gender.code).join(",");
+
+	const isNewbie = filter.value.isNewbie;
+	const currentAgeRange = filter.value.ageRange;
+
+	pagedRequest = {
+		...pagedRequest,
+		nickName: searchText.value?.trim() || undefined,
+		mcTypeIds: mcTypeIds || undefined,
+		hostingStyleIds: hostingStyleIds || undefined,
+		provinceIds: areaIds || undefined,
+		genders: genderCodes || undefined,
+		isNewbie: isNewbie === true ? isNewbie : undefined,
+		minAge: currentAgeRange?.[0] || undefined,
+		maxAge: currentAgeRange?.[1] || undefined,
+	};
+};
+
 const handleScroll = (event: any) => {
-	console.log("even");
 	const bottom = event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight;
 	if (bottom) {
 		loadMoreUsers();
 	}
 };
-
-let pagedRequest: UserPagedRequest = {
-	pageIndex: 0,
-	pageSize: 10,
-	sort: "credit DESC",
-	isMc: true,
-	isGetMcType: true,
-	isGetProvince: true,
-	isUseProc: true,
-};
-
-const hasFilter = computed(() => !isEqual(filter.value, initialFilter));
-
-const users = ref<User[]>([]);
-onMounted(async () => {
-	await loadMoreUsers();
-});
 //#endregion
 
-/**
- * Navigation Handlers
- *
- * Functions for handling navigation events:
- * - Login redirection with return path
- * - MC profile navigation
- *
- * created by tqcong 20/5/2025.
- */
-const router = useRouter();
-const authStore = useAuthStore();
-
-/**
- * Redirects to login page while preserving return path
- * created by tqcong 20/5/2025.
- */
+//#region Navigation
 const handleLoginClick = () => {
 	router.push({ name: "user-login", query: { redirect: router.currentRoute.value.fullPath } });
 };
 
-/**
- * Navigates to specific MC's profile page
- *
- * @param {number} id - MC's unique identifier
- * created by tqcong 20/5/2025.
- */
 const redirectToMC = (id: number) => {
 	router.push({ name: "uc-mc", params: { id } });
 };
 //#endregion
+
+onMounted(async () => {
+	await loadMoreUsers();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -438,6 +346,7 @@ const redirectToMC = (id: number) => {
 		justify-content: center;
 	}
 }
+
 .reset-button {
 	margin-right: auto;
 }

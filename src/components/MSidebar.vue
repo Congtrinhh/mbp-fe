@@ -13,10 +13,13 @@ import { ref, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import type { MenuItem } from "primevue/menuitem";
 
+//#region Props
 defineProps<{
 	collapsed: boolean;
 }>();
+//#endregion
 
+//#region Router & Navigation
 const router = useRouter();
 const route = useRoute();
 
@@ -27,7 +30,9 @@ const isActive = (path: string) => {
 const handleNavigation = (path: string) => {
 	router.push(path);
 };
+//#endregion
 
+//#region Menu Configuration
 const menuItems = ref<MenuItem[]>([
 	{
 		label: "MCs and Clients",
@@ -90,9 +95,11 @@ const menuItems = ref<MenuItem[]>([
 		],
 	},
 ]);
+//#endregion
 </script>
 
 <style scoped>
+/* Panel Menu Base Styles */
 :deep(.p-panelmenu) {
 	@apply border-none;
 }
@@ -109,6 +116,7 @@ const menuItems = ref<MenuItem[]>([
 	@apply px-5 py-2 hover:bg-slate-50;
 }
 
+/* Panel Menu Content Styles */
 :deep(.p-panelmenu-content) {
 	@apply border-none;
 }
@@ -129,6 +137,7 @@ const menuItems = ref<MenuItem[]>([
 	@apply border-none;
 }
 
+/* Active State Styles */
 :deep(.active-item) {
 	@apply text-blue-600 font-medium;
 }

@@ -1,13 +1,17 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
+// Type imports
 import type { McType } from "@/entities/mcType";
 import type { Province } from "@/entities/province";
 import type { User } from "@/entities/user/user";
 import { Gender } from "@/enums/gender";
-import { computed, withDefaults } from "vue";
 
+//#region Props & Interfaces
 interface Props {
 	user: User;
 }
+
 const props = withDefaults(defineProps<Props>(), {
 	user: () => ({
 		id: 0,
@@ -36,17 +40,25 @@ const props = withDefaults(defineProps<Props>(), {
 		hostingStyles: [],
 	}),
 });
+//#endregion
 
+//#region Computed Properties
 const mcTypes = computed(() => props.user.mcTypes.map((type: McType) => type.label).join(", "));
+
 const provinces = computed(() => props.user.provinces.map((province: Province) => province.name).join(", "));
+//#endregion
 </script>
 
 <template>
 	<div class="m-mc-container">
+		<!-- Image Section -->
 		<div class="m-img-container">
 			<img :src="props.user.avatarUrl" alt="user avatar" />
 		</div>
+
+		<!-- Description Section -->
 		<div class="m-desc-container">
+			<!-- Labels & Ratings -->
 			<div class="m-labels-container">
 				<div v-if="props.user.reviewCount" class="rating">
 					<i class="pi pi-star-fill" style="color: #f59e0b"></i>
@@ -55,6 +67,8 @@ const provinces = computed(() => props.user.provinces.map((province: Province) =
 				</div>
 				<Tag v-if="props.user.isNewbie" value="Mới"></Tag>
 			</div>
+
+			<!-- MC Info -->
 			<strong class="m-mc-name">{{ props.user.nickName }}</strong>
 			<div class="m-mc-address line-clamp-1">{{ provinces }}</div>
 			<div class="m-mc-types line-clamp-1">{{ mcTypes }}</div>

@@ -37,6 +37,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAdminAuth } from "@/composables/admin/useAdminAuth";
 
+//#region State & Dependencies
 const router = useRouter();
 const { setAdminToken } = useAdminAuth();
 
@@ -44,11 +45,18 @@ const username = ref("");
 const password = ref("");
 const submitted = ref(false);
 const loading = ref(false);
+//#endregion
 
-const handleLogin = async () => {
+//#region Form Validation
+const validateForm = (): boolean => {
 	submitted.value = true;
+	return !!(username.value && password.value);
+};
+//#endregion
 
-	if (!username.value || !password.value) {
+//#region Authentication Handlers
+const handleLogin = async () => {
+	if (!validateForm()) {
 		return;
 	}
 
@@ -65,6 +73,7 @@ const handleLogin = async () => {
 		loading.value = false;
 	}
 };
+//#endregion
 </script>
 
 <style scoped>

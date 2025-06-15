@@ -38,6 +38,7 @@
 							<span v-if="isRequired(field)" class="text-red-600">*</span>
 						</label>
 
+						<!-- Field Components -->
 						<!-- Text Input -->
 						<InputText
 							v-if="getEffectiveUIConfig(field).type === 'InputText'"
@@ -84,13 +85,14 @@
 							:readonly="mode === EditingMode.None || getEffectiveUIConfig(field).readonly"
 						/>
 
+						<!-- Field Error Message -->
 						<Message v-if="$form[field.key]?.invalid" severity="error" size="small" variant="simple">
 							{{ $form[field.key]?.error?.message }}
 						</Message>
 					</div>
 				</div>
 
-				<!-- Footer -->
+				<!-- Form Footer -->
 				<div class="flex justify-end gap-2 mt-4">
 					<Button
 						v-if="mode === EditingMode.None"
@@ -124,13 +126,14 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useToast } from "primevue/usetoast";
+import { EditingMode } from "../../enums/editingMode";
+import { zodResolver } from "@primevue/forms/resolvers/zod";
+
+// Types
 import type { FormConfig, FieldConfig, FieldUIConfig } from "./MBaseForm.types";
 import { formUtils } from "./MBaseForm.types";
-import { EditingMode } from "../../enums/editingMode";
-import { zodResolver } from "@primevue/forms/resolvers/zod"; // just type check error, ignore it
 
-const toast = useToast();
-
+//#region Props & Emits
 const props = defineProps<{
 	modelValue: boolean;
 	mode: EditingMode;
@@ -143,16 +146,19 @@ const emit = defineEmits<{
 	"update:formData": [data: Record<string, any>];
 	submitted: [data: Record<string, any>];
 }>();
+//#endregion
 
-// State
+//#region State
 const isLoading = ref(false);
 const isDisabled = ref(false);
+const toast = useToast();
 
-// Form resolver using zodResolver
+// Form validation schema
 const schema = formUtils.createSchema(props.config.fields);
 const resolver = zodResolver(schema);
+//#endregion
 
-// Computed
+//#region Computed Properties
 const formTitle = computed(() => {
 	switch (props.mode) {
 		case EditingMode.Create:
@@ -173,8 +179,9 @@ const sortedFields = computed(() => {
 		return orderA - orderB;
 	});
 });
+//#endregion
 
-// Methods
+//#region Form Configuration
 function getEffectiveUIConfig(field: FieldConfig): FieldUIConfig {
 	const modeKey = props.mode === EditingMode.None ? "view" : props.mode === EditingMode.Update ? "edit" : "add";
 	const modeOverrides = props.config.modes?.[modeKey]?.[field.key];
@@ -184,11 +191,11 @@ function getEffectiveUIConfig(field: FieldConfig): FieldUIConfig {
 function isRequired(field: FieldConfig): boolean {
 	return !field.schema.isOptional();
 }
+//#endregion
 
+//#region Form Submission
 async function handleSubmit({ valid, values }: { valid: boolean; values: Record<string, any> }) {
-	if (props.mode === EditingMode.None || !valid) {
-		return;
-	}
+	if (props.mode === EditingMode.None || !valid) return;
 
 	try {
 		isDisabled.value = true;
@@ -225,8 +232,9 @@ async function handleSubmit({ valid, values }: { valid: boolean; values: Record<
 function handleClose() {
 	emit("update:modelValue", false);
 }
+//#endregion
 
-// Watches
+//#region Lifecycle Hooks & Watchers
 watch(
 	() => props.modelValue,
 	async (newVal) => {
@@ -248,6 +256,7 @@ watch(
 		}
 	}
 );
+//#endregion
 </script>
 
 <style scoped>

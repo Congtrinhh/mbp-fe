@@ -45,10 +45,13 @@ import MSidebar from "@/components/MSidebar.vue";
 import MAdminHeader from "@/views/admin/layout/MAdminHeader.vue";
 import ProgressSpinner from "primevue/progressspinner";
 
+//#region State & Dependencies
 const router = useRouter();
 const { validateAdminToken } = useAdminAuth();
 const sidebarCollapsed = ref(window.innerWidth < 768);
+//#endregion
 
+//#region Sidebar Management
 const toggleSidebar = () => {
 	sidebarCollapsed.value = !sidebarCollapsed.value;
 };
@@ -59,7 +62,9 @@ const handleResize = () => {
 		sidebarCollapsed.value = true;
 	}
 };
+//#endregion
 
+//#region Authentication & Lifecycle
 onMounted(async () => {
 	const isAuthenticated = await validateAdminToken();
 	if (!isAuthenticated) {
@@ -68,6 +73,7 @@ onMounted(async () => {
 
 	window.addEventListener("resize", handleResize);
 });
+//#endregion
 </script>
 
 <style scoped>

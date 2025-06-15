@@ -40,6 +40,7 @@ import { useAdminAuth } from "@/composables/admin/useAdminAuth";
 import type { MenuItem } from "primevue/menuitem";
 import Menu from "primevue/menu";
 
+//#region Props & Emits
 defineProps<{
 	collapsed: boolean;
 }>();
@@ -47,11 +48,15 @@ defineProps<{
 defineEmits<{
 	(e: "toggle-sidebar"): void;
 }>();
+//#endregion
 
+//#region State & Dependencies
 const router = useRouter();
 const menu = ref();
 const { clearAdminToken } = useAdminAuth();
+//#endregion
 
+//#region Account Menu Handlers
 const handleLogout = () => {
 	clearAdminToken();
 	router.push("/admin/login");
@@ -77,6 +82,7 @@ const accountItems = ref<MenuItem[]>([
 		command: handleLogout,
 	},
 ]);
+//#endregion
 </script>
 
 <style scoped>

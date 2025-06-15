@@ -57,15 +57,23 @@ import type { FormConfig } from "@/components/admin/MBaseForm.types";
 import { formUtils } from "@/components/admin/MBaseForm.types";
 import { EditingMode } from "@/enums/editingMode";
 
+//#region State & Dependencies
 const toast = useToast();
 const loading = ref(false);
 const showForm = ref(false);
 const selectedMc = ref<Record<string, any>>({});
 const formMode = ref(EditingMode.None);
 
-// #region List
+// Mock permissions (replace with actual permission system)
+const permissions = {
+	canView: () => true,
+	canEdit: () => true,
+	canDelete: () => true,
+	hasPermission: (permission: string) => true,
+};
+//#endregion
 
-// Column definitions
+//#region List Configuration
 const columns: ColumnDef[] = [
 	{ field: "id", header: "ID", width: "80px" },
 	{ field: "fullName", header: "Full Name", searchable: true },
@@ -76,7 +84,6 @@ const columns: ColumnDef[] = [
 	{ field: "status", header: "Status", template: "status" },
 ];
 
-// Action configurations
 const actions: ActionConfig[] = [
 	{
 		type: "view",
@@ -101,8 +108,9 @@ const actions: ActionConfig[] = [
 		handler: (row: any) => handleDelete(row as User),
 	},
 ];
+//#endregion
 
-// Data loading handler
+//#region Data Loading & Event Handlers
 const handleLoadData = async (params: ListParams) => {
 	loading.value = true;
 	try {
@@ -114,7 +122,6 @@ const handleLoadData = async (params: ListParams) => {
 	}
 };
 
-// Action handlers
 const handleView = async (row: User) => {
 	selectedMc.value = row;
 	formMode.value = EditingMode.None;
@@ -127,7 +134,6 @@ const handleEdit = async (row: User) => {
 	showForm.value = true;
 };
 
-// Handle double-click event
 const handleRowDblClick = (row: User) => {
 	if (permissions.canEdit()) {
 		handleEdit(row);
@@ -154,18 +160,9 @@ const handleDelete = async (row: User) => {
 		});
 	}
 };
+//#endregion
 
-// Mock permissions (replace with actual permission system)
-const permissions = {
-	canView: () => true,
-	canEdit: () => true,
-	canDelete: () => true,
-	hasPermission: (permission: string) => true,
-};
-
-// #endregion
-
-// #region Form
+//#region Form Configuration
 const formConfig = computed<FormConfig>(() => ({
 	fields: [
 		formUtils.createField("email", z.string().email("Email không hợp lệ"), {
@@ -245,5 +242,5 @@ function handleFormSubmitted() {
 		sortOrder: "desc",
 	});
 }
-// #endregion
+//#endregion
 </script>

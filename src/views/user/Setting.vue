@@ -19,6 +19,8 @@
 <template>
 	<main class="main-container">
 		<header class="center-header">Thiết lập</header>
+
+		<!-- User Profile Section -->
 		<div class="account-wrapper" v-if="isLoggedIn" @click="redirectToProfile(user?.id)">
 			<div class="avatar img-parent">
 				<img :src="user?.avatarUrl" alt="avatar" />
@@ -29,6 +31,7 @@
 			<button @click="redirectToLogin">Đăng nhập</button>
 		</div>
 
+		<!-- Settings Options -->
 		<div class="option-list" v-if="isLoggedIn">
 			<div class="option-item" @click="redirectToContracts">
 				<div class="icon pi pi-book"></div>
@@ -47,68 +50,41 @@
 </template>
 
 <script setup lang="ts">
-/**
- * Setting View Component Script
- *
- * Handles user settings and account management functionality:
- * - User authentication state management
- * - Navigation to account-related features
- * - Logout functionality with notifications
- *
- * created by tqcong 20/5/2025.
- */
-
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
+import { useToast } from "primevue/usetoast";
+
+// Store & Composables
 import { useAuthStore } from "@/stores/authStore";
 import { useRedirect } from "@/composables/useRedirect";
-import { useToast } from "primevue/usetoast";
-import { storeToRefs } from "pinia";
 
-/**
- * Component state and dependencies
- * created by tqcong 20/5/2025.
- */
-const { redirectToProfile } = useRedirect();
+//#region State & Store Management
 const router = useRouter();
 const authStore = useAuthStore();
-const { user } = storeToRefs(authStore);
+const { redirectToProfile } = useRedirect();
 const toast = useToast();
 
-/**
- * Computed state for authentication status
- * created by tqcong 20/5/2025.
- */
+// Reactive References
+const { user } = storeToRefs(authStore);
 const isLoggedIn = computed(() => !!user.value);
+//#endregion
 
-/**
- * Navigation and authentication handlers
- * created by tqcong 20/5/2025.
- */
-/**
- * Redirects user to login page
- * created by tqcong 20/5/2025.
- */
+//#region Navigation Handlers
 const redirectToLogin = () => {
 	router.push({ name: "user-login" });
 };
 
-/**
- * Redirects user to contracts list page
- * created by tqcong 20/5/2025.
- */
 const redirectToContracts = () => {
 	router.push({ name: "user-contract-list" });
 };
 
-/**
- * Redirects user to identity verification page
- * created by tqcong 20/5/2025.
- */
 const redirectToIdVerification = () => {
 	router.push({ name: "user-identity-verification" });
 };
+//#endregion
 
+//#region Authentication Handlers
 /**
  * Handles user logout
  * - Calls auth store logout method
@@ -119,8 +95,18 @@ const redirectToIdVerification = () => {
 const logout = async () => {
 	await authStore.logout();
 	router.push({ name: "user-post-list" });
-	toast.add({ severity: "success", summary: "Đã đăng xuất", detail: "Bạn đã đăng xuất khỏi hệ thống", life: 3000 });
+	showLogoutNotification();
 };
+
+const showLogoutNotification = () => {
+	toast.add({
+		severity: "success",
+		summary: "Đã đăng xuất",
+		detail: "Bạn đã đăng xuất khỏi hệ thống",
+		life: 3000,
+	});
+};
+//#endregion
 </script>
 
 <style lang="scss" scoped>
@@ -137,13 +123,13 @@ const logout = async () => {
 	background: #fff;
 	margin-bottom: 8px;
 	align-items: center;
-}
 
-.avatar {
-	width: 40px;
-	height: 40px;
-	border-radius: 50%;
-	overflow: hidden;
+	.avatar {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		overflow: hidden;
+	}
 }
 
 .login-button {
@@ -160,20 +146,27 @@ const logout = async () => {
 	flex-direction: column;
 	padding-top: 16px;
 	flex: 1;
-}
-.option-item {
-	display: flex;
-	align-items: center;
-	gap: 24px;
-	padding: 12px 24px;
-	cursor: pointer;
-	background: #fff;
 
-	.icon {
-		font-size: 1.2rem;
+	.option-item {
+		display: flex;
+		align-items: center;
+		gap: 24px;
+		padding: 12px 24px;
+		cursor: pointer;
+		background: #fff;
+		transition: background-color 0.2s ease;
+
+		&:hover {
+			background: #f5f5f5;
+		}
+
+		&:focus {
+			background: #333;
+		}
+
+		.icon {
+			font-size: 1.2rem;
+		}
 	}
-}
-.option-item:focus {
-	background: #333;
 }
 </style>

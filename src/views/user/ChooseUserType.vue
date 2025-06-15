@@ -18,11 +18,15 @@
 <template>
 	<main class="main-container background-1">
 		<h1 class="title">Bạn là ai?</h1>
+
+		<!-- User Type Selection Form -->
 		<div class="radio-group">
 			<div class="radio-item">
 				<RadioButton size="large" inputId="mc" v-model="isMc" :value="true" />
 				<label for="mc">MC</label>
 			</div>
+
+			<!-- MC Experience Level Selection -->
 			<div v-if="isMc" class="sub-options">
 				<div class="radio-item">
 					<RadioButton size="large" inputId="experienced" v-model="isNewbie" :value="false" />
@@ -33,12 +37,14 @@
 					<label for="newbie">MC mới</label>
 				</div>
 			</div>
+
 			<div class="radio-item">
 				<RadioButton size="large" inputId="guest" v-model="isMc" :value="false" />
 				<label for="guest">Khách booking MC</label>
 			</div>
 		</div>
 
+		<!-- Navigation Buttons -->
 		<div class="button-group">
 			<Button @click="goBack" severity="secondary">Quay lại</Button>
 			<Button @click="submitUserType" severity="contrast">Tiếp tục</Button>
@@ -47,112 +53,108 @@
 </template>
 
 <script setup lang="ts">
-/**
- * User Type Selection Component Script
- *
- * Handles user type selection and registration completion:
- * - Google credential validation
- * - User type and experience selection
- * - Account creation with selected preferences
- * - Navigation and notification management
- *
- * created by tqcong 20/5/2025.
- */
-
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
+
+// API & Store imports
 import { authApi } from "@/apis/authApi";
 import { useAuthStore } from "@/stores/authStore";
 import { hideLoading, showLoading } from "@/composables/useLoading";
 
-/**
- * Component state and dependencies
- * created by tqcong 20/5/2025.
- */
+//#region State & Dependencies
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 
-/**
- * User type selection state
- * created by tqcong 20/5/2025.
- */
 const isMc = ref(true);
 const isNewbie = ref<boolean>(false);
 const credential = route.query.credential as string;
+//#endregion
 
-/**
- * Navigation handler to return to login page
- * created by tqcong 20/5/2025.
- */
+//#region Navigation Handlers
 const goBack = () => {
 	router.push({ name: "user-login" });
 };
 
-/**
- * Submits user type selection and completes registration
- * - Validates Google credential
- * - Creates user account with selected type
- * - Handles success/error notifications
- * - Manages loading state
- * - Navigates to post list on success
- *
- * created by tqcong 20/5/2025.
- */
+const navigateToPostList = () => {
+	router.push({ name: "user-post-list" });
+};
+//#endregion
+
+//#region Form Submission
 const submitUserType = async () => {
-	if (!credential) {
-		toast.add({ severity: "error", summary: "Lỗi", detail: "Thiếu thông tin xác thực", life: 3000 });
-		return;
-	}
+	if (!validateCredential()) return;
 
 	try {
 		showLoading();
-
-		const response = await authApi.loginWithGoogle(credential, true, isMc.value, isNewbie.value);
-		if (response.data.accessToken) {
-			const authStore = useAuthStore();
-			authStore.login(response.data.accessToken);
-			toast.add({
-				severity: "success",
-				summary: "Thành công",
-				detail: "Tài khoản đã được tạo thành công",
-				life: 3000,
-			});
-			router.push({ name: "user-post-list" });
-		} else {
-			toast.add({
-				severity: "error",
-				summary: "Lỗi",
-				detail: "Tạo tài khoản thất bại",
-				life: 3000,
-			});
-		}
+		await handleAccountCreation();
 	} catch (error) {
 		console.error(error);
+		showErrorToast("Tạo tài khoản thất bại");
 	} finally {
 		hideLoading();
 	}
 };
+
+const validateCredential = (): boolean => {
+	if (!credential) {
+		showErrorToast("Thiếu thông tin xác thực");
+		return false;
+	}
+	return true;
+};
+
+const handleAccountCreation = async () => {
+	const response = await authApi.loginWithGoogle(credential, true, isMc.value, isNewbie.value);
+
+	if (response.data.accessToken) {
+		const authStore = useAuthStore();
+		authStore.login(response.data.accessToken);
+		showSuccessToast();
+		navigateToPostList();
+	} else {
+		showErrorToast("Tạo tài khoản thất bại");
+	}
+};
+//#endregion
+
+//#region Notifications
+const showSuccessToast = () => {
+	toast.add({
+		severity: "success",
+		summary: "Thành công",
+		detail: "Tài khoản đã được tạo thành công",
+		life: 3000,
+	});
+};
+
+const showErrorToast = (message: string) => {
+	toast.add({
+		severity: "error",
+		summary: "Lỗi",
+		detail: message,
+		life: 3000,
+	});
+};
+//#endregion
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .main-container {
 	display: flex;
 	flex-direction: column;
 	padding: 24px;
 	padding-top: 34vh;
+
+	.title {
+		text-align: center;
+		font-size: 2rem;
+		margin-bottom: 54px;
+		font-weight: 700;
+	}
 }
-.title {
-	text-align: center;
-	font-size: 2rem;
-	margin-bottom: 54px;
-	font-weight: 700;
-}
-.info {
-	text-align: center;
-	margin-bottom: 24px;
-}
+
 .radio-group {
 	display: flex;
 	flex-direction: column;
@@ -160,36 +162,30 @@ const submitUserType = async () => {
 	flex-grow: 1;
 	justify-content: flex-start;
 	margin-left: 70px;
+
+	.radio-item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+
+		label {
+			font-size: 1.05rem;
+			font-weight: 600;
+		}
+	}
+
+	.sub-options {
+		padding-left: 24px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
 }
-.radio-item {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
+
 .button-group {
 	display: flex;
 	justify-content: flex-end;
 	gap: 16px;
 	margin-bottom: 30px;
-}
-.newbie-section {
-	margin-top: 24px;
-	margin-left: 70px;
-}
-.newbie-title {
-	font-size: 1.2rem;
-	margin-bottom: 16px;
-}
-
-.sub-options {
-	padding-left: 24px;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-label {
-	font-size: 1.05rem;
-	font-weight: 600;
 }
 </style>

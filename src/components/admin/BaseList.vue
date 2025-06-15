@@ -83,12 +83,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watchEffect } from "vue";
-import type { BaseEntity, ColumnDef, ActionConfig, ListParams, ListResponse } from "./types";
-import type { DataTableSortEvent } from "primevue/datatable";
 import Column from "primevue/column";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 
+// Types
+import type { BaseEntity, ColumnDef, ActionConfig, ListParams, ListResponse } from "./types";
+import type { DataTableSortEvent } from "primevue/datatable";
+
+//#region Props & Emits
 const props = withDefaults(
 	defineProps<{
 		columns: ColumnDef[];
@@ -103,7 +106,7 @@ const props = withDefaults(
 			hasPermission: (permission: string) => boolean;
 		};
 		loading?: boolean;
-		onLoad?: (params: ListParams) => Promise<ListResponse<BaseEntity>>; // will call getPaged method of AdminBaseApi
+		onLoad?: (params: ListParams) => Promise<ListResponse<BaseEntity>>;
 	}>(),
 	{
 		pageSize: 50,
@@ -117,8 +120,9 @@ const emit = defineEmits<{
 	"row-dblclick": [row: BaseEntity];
 	error: [error: Error];
 }>();
+//#endregion
 
-// Component state
+//#region State
 const data = ref<BaseEntity[]>([]);
 const totalRecords = ref(0);
 const first = ref(0);
@@ -132,8 +136,9 @@ const isLoading = ref(props.loading);
 // Services
 const confirm = useConfirm();
 const toast = useToast();
+//#endregion
 
-// Methods
+//#region Data Loading
 const loadData = async () => {
 	if (!props.onLoad) return;
 
@@ -166,7 +171,9 @@ const loadData = async () => {
 		}
 	}
 };
+//#endregion
 
+//#region Event Handlers
 const handleSort = (event: DataTableSortEvent) => {
 	if (typeof event.sortField === "string") {
 		sortField.value = event.sortField;
@@ -181,26 +188,6 @@ const handleSort = (event: DataTableSortEvent) => {
 const handlePageChange = (event: { first: number; rows: number }) => {
 	first.value = event.first;
 	rows.value = event.rows;
-	loadData();
-};
-
-// Debounce utility
-const debounce = <T extends (...args: any[]) => any>(fn: T, delay: number) => {
-	let timeoutId: ReturnType<typeof setTimeout>;
-	return (...args: Parameters<T>) => {
-		clearTimeout(timeoutId);
-		timeoutId = setTimeout(() => fn(...args), delay);
-	};
-};
-
-const handleSearch = debounce(() => {
-	first.value = 0;
-	loadData();
-}, 500);
-
-const handleRefresh = () => {
-	first.value = 0;
-	rows.value = props.pageSize;
 	loadData();
 };
 
@@ -234,24 +221,40 @@ const handleAction = (action: ActionConfig, row: BaseEntity) => {
 		action.handler?.(row);
 	}
 };
+//#endregion
 
-const initDefault = () => {
-	//init default actions column with view, edit and delete
+//#region Search & Refresh
+const debounce = <T extends (...args: any[]) => any>(fn: T, delay: number) => {
+	let timeoutId: ReturnType<typeof setTimeout>;
+	return (...args: Parameters<T>) => {
+		clearTimeout(timeoutId);
+		timeoutId = setTimeout(() => fn(...args), delay);
+	};
 };
 
-// Watch for loading prop changes
+const handleSearch = debounce(() => {
+	first.value = 0;
+	loadData();
+}, 500);
+
+const handleRefresh = () => {
+	first.value = 0;
+	rows.value = props.pageSize;
+	loadData();
+};
+//#endregion
+
+//#region Lifecycle Hooks
 watchEffect(() => {
 	if (props.loading !== undefined) {
 		isLoading.value = props.loading;
 	}
 });
 
-// Initial load
 onMounted(() => {
-	initDefault();
-
 	loadData();
 });
+//#endregion
 </script>
 
 <style scoped>
@@ -259,9 +262,7 @@ onMounted(() => {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
-	max-height: calc(
-		100vh - 137px
-	); /* Account for app header (56px) + page padding (32px) + page title (28px) + margin (21px) */
+	max-height: calc(100vh - 137px);
 	overflow: hidden;
 }
 
@@ -269,12 +270,12 @@ onMounted(() => {
 	display: flex;
 	flex-direction: column;
 	flex: 1;
-	min-height: 0; /* Important for Firefox */
+	min-height: 0;
 }
 
 .base-list :deep(.p-datatable-wrapper) {
 	flex: 1;
-	min-height: 0; /* Important for Firefox */
+	min-height: 0;
 }
 
 .search-container {

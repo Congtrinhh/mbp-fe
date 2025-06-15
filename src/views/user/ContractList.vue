@@ -55,23 +55,26 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
+import { useRouter } from "vue-router";
 import { contractApi } from "@/apis/contractApi";
 import { useAuthStore } from "@/stores/authStore";
-import type { Contract } from "@/entities/contract";
-import { ContractStatus, getContractStatusText } from "@/enums/contractStatus";
-import type { ContractPagedRequest } from "@/entities/user/paging/contractPagedRequest";
 import { useRedirect } from "@/composables/useRedirect";
-import { useRouter } from "vue-router";
+import type { Contract } from "@/entities/contract";
+import type { ContractPagedRequest } from "@/entities/user/paging/contractPagedRequest";
+import { ContractStatus, getContractStatusText } from "@/enums/contractStatus";
 
+//#region State & Store Management
 const contracts = ref<Contract[]>([]);
 const page = ref(0);
 const pageSize = 10;
 const loading = ref(false);
 const authStore = useAuthStore();
-const { redirectToProfile } = useRedirect();
 const router = useRouter();
+const { redirectToProfile } = useRedirect();
 const isMc = computed(() => authStore.user?.isMc == "true");
+//#endregion
 
+//#region Data Loading
 const fetchContracts = async () => {
 	if (loading.value) return;
 	loading.value = true;
@@ -102,6 +105,12 @@ const fetchContracts = async () => {
 	}
 };
 
+onMounted(() => {
+	fetchContracts();
+});
+//#endregion
+
+//#region Contract Display Helpers
 const getAvatarUrl = (contract: Contract) => {
 	if (isMc.value) {
 		return contract.client?.avatarUrl;
@@ -125,7 +134,9 @@ const getUserId = (contract: Contract) => {
 		return contract.mc?.id;
 	}
 };
+//#endregion
 
+//#region Event Handlers
 const handleScroll = (event: any) => {
 	const bottom = event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight;
 	if (bottom) {
@@ -136,10 +147,7 @@ const handleScroll = (event: any) => {
 const redirectToContractDetail = (contract: any) => {
 	router.push({ name: "user-contract-detail", params: { id: contract.id } });
 };
-
-onMounted(() => {
-	fetchContracts();
-});
+//#endregion
 </script>
 
 <style lang="scss" scoped>
@@ -153,7 +161,7 @@ onMounted(() => {
 	display: flex;
 	flex-direction: column;
 	overflow-y: auto;
-	height: 100vh; /* Adjust as needed */
+	height: 100vh;
 }
 
 .contract-item {

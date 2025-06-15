@@ -8,7 +8,10 @@
 		>
 			<div class="swiper-wrapper" :style="{ transform: `translateY(${translateY}px)` }">
 				<div v-for="(media, index) in medias" :key="media.id" class="swiper-slide">
+					<!-- Image Media -->
 					<img v-if="media.type === MediaType.Image" :src="media.url" alt="" />
+
+					<!-- Video Media -->
 					<div
 						v-if="media.type === MediaType.Video"
 						class="video-container"
@@ -23,9 +26,12 @@
 							@loadedmetadata="setDuration(index)"
 							style="object-fit: cover; width: 100%; height: 100%"
 						></video>
+
+						<!-- Video Controls -->
 						<div class="video-overlay" v-if="!isPlaying[index]">
 							<i class="pi pi-play play-icon"></i>
 						</div>
+
 						<!-- Progress Bar -->
 						<div
 							class="progress-bar-container"
@@ -38,6 +44,8 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- Controls -->
 		<button class="close-button" @click="close">
 			<i class="pi pi-times"></i>
 		</button>
@@ -47,9 +55,12 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, nextTick } from "vue";
+
+// Type imports
 import type { Media } from "@/entities/user/media";
 import { MediaType } from "@/enums/mediaType";
 
+//#region Props & Emits
 const props = defineProps<{
 	visible: boolean;
 	medias: Media[];
@@ -59,7 +70,9 @@ const props = defineProps<{
 const emit = defineEmits<{
 	(e: "update:visible", value: boolean): void;
 }>();
+//#endregion
 
+//#region State
 const currentIndex = ref(props.initialIndex);
 const translateY = ref(0);
 const touchStart = ref(0);
@@ -68,7 +81,9 @@ const videoRefs = ref<Array<HTMLVideoElement | null>>([]);
 const isPlaying = ref<boolean[]>([]);
 const progress = ref<number[]>([]);
 const wasVideoClicked = ref(true);
+//#endregion
 
+//#region Watchers
 watch(
 	() => props.visible,
 	(newValue) => {
@@ -90,6 +105,7 @@ watch(
 watch(currentIndex, (newVal, oldVal) => {
 	const oldVid = videoRefs.value[oldVal];
 	const newVid = videoRefs.value[newVal];
+
 	if (oldVid) {
 		oldVid.pause();
 		isPlaying.value[oldVal] = false;
@@ -99,11 +115,9 @@ watch(currentIndex, (newVal, oldVal) => {
 		isPlaying.value[newVal] = true;
 	}
 });
+//#endregion
 
-const close = () => {
-	emit("update:visible", false);
-};
-
+//#region Touch Handlers
 const handleTouchStart = (e: TouchEvent) => {
 	touchStart.value = e.touches[0].clientY;
 };
@@ -121,25 +135,25 @@ const handleTouchEnd = () => {
 		wasVideoClicked.value = false;
 		return;
 	}
+
 	const diff = touchMove.value - touchStart.value;
-	const threshold = window.innerHeight * 0.2; // 20% of screen height
+	const threshold = window.innerHeight * 0.2;
 
 	if (Math.abs(diff) > threshold) {
 		if (diff > 0 && currentIndex.value > 0) {
-			// Swipe down, show previous media
 			currentIndex.value--;
 		} else if (diff < 0 && currentIndex.value < props.medias.length - 1) {
-			// Swipe up, show next media
 			currentIndex.value++;
 		}
 	}
 
-	// Animate to the current media
 	translateY.value = -currentIndex.value * window.innerHeight;
 	touchStart.value = 0;
 	touchMove.value = 0;
 };
+//#endregion
 
+//#region Video Controls
 const toggleVideo = (index: number, evt: Event) => {
 	evt.stopPropagation();
 	wasVideoClicked.value = true;
@@ -171,11 +185,6 @@ const setDuration = (index: number) => {
 	}
 };
 
-/**
- * bắt đầu action kéo thả tua video
- * @param index
- * @param event
- */
 const startSeek = (index: number, event: MouseEvent | TouchEvent) => {
 	const vid = videoRefs.value[index];
 	if (!vid) return;
@@ -202,6 +211,13 @@ const startSeek = (index: number, event: MouseEvent | TouchEvent) => {
 
 	seek(event);
 };
+//#endregion
+
+//#region UI Controls
+const close = () => {
+	emit("update:visible", false);
+};
+//#endregion
 </script>
 
 <style lang="scss" scoped>
@@ -213,30 +229,30 @@ const startSeek = (index: number, event: MouseEvent | TouchEvent) => {
 	height: 100vh;
 	background: rgba(0, 0, 0, 0.9);
 	z-index: 1000;
-}
 
-.swiper-container {
-	width: 100%;
-	height: 100%;
-	overflow: hidden;
-}
+	.swiper-container {
+		width: 100%;
+		height: 100%;
+		overflow: hidden;
+	}
 
-.swiper-wrapper {
-	transition: transform 0.3s ease-out;
-}
+	.swiper-wrapper {
+		transition: transform 0.3s ease-out;
+	}
 
-.swiper-slide {
-	width: 100vw;
-	height: 100vh;
-	display: flex;
-	align-items: center;
-	justify-content: center;
+	.swiper-slide {
+		width: 100vw;
+		height: 100vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 
-	img,
-	video {
-		max-width: 100%;
-		max-height: 100%;
-		object-fit: contain;
+		img,
+		video {
+			max-width: 100%;
+			max-height: 100%;
+			object-fit: contain;
+		}
 	}
 }
 
@@ -279,10 +295,10 @@ const startSeek = (index: number, event: MouseEvent | TouchEvent) => {
 		color: white;
 		font-size: 2rem;
 		pointer-events: none;
-	}
 
-	.play-icon {
-		font-size: 4rem;
+		.play-icon {
+			font-size: 4rem;
+		}
 	}
 
 	.progress-bar-container {
@@ -293,12 +309,12 @@ const startSeek = (index: number, event: MouseEvent | TouchEvent) => {
 		height: 5px;
 		background: rgba(255, 255, 255, 0.3);
 		cursor: pointer;
-	}
 
-	.progress-bar {
-		height: 100%;
-		background: #fff;
-		width: 0;
+		.progress-bar {
+			height: 100%;
+			background: #fff;
+			width: 0;
+		}
 	}
 }
 </style>

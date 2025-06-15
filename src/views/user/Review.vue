@@ -1,6 +1,8 @@
 <template>
 	<main class="main-container">
 		<header class="center-header">Đánh giá</header>
+
+		<!-- Contract Information -->
 		<div class="event-info-container">
 			<div class="info-item">
 				<label>Sự kiện:</label>
@@ -22,67 +24,75 @@
 			</div>
 			<div class="underline cursor-pointer view-contract-button" @click="viewContract">Xem hợp đồng</div>
 		</div>
+
+		<!-- Review Form -->
 		<div class="review-form">
 			<Form :resolver="reviewFormResolver" @submit="onSubmit" :initialValues="review">
 				<div class="form-body flex flex-column gap-4">
+					<!-- Common Fields -->
 					<FormField v-slot="$field" name="overallPoint" class="flex flex-col gap-1">
 						<label for="overallPoint" class="form-label">Đánh giá</label>
 						<Rating name="overallPoint" v-model="review.overallPoint" />
-						<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
-							$field.error?.message
-						}}</Message>
+						<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">
+							{{ $field.error?.message }}
+						</Message>
 					</FormField>
+
 					<FormField v-slot="$field" name="shortDescription" class="flex flex-col gap-1">
 						<label for="shortDescription" class="form-label">Mô tả ngắn</label>
 						<InputText name="shortDescription" v-model="review.shortDescription" />
-						<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
-							$field.error?.message
-						}}</Message>
+						<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">
+							{{ $field.error?.message }}
+						</Message>
 					</FormField>
 
-					<!-- Fields for Client reviewing MC -->
+					<!-- Client-specific Fields -->
 					<template v-if="!isMc">
 						<FormField v-slot="$field" name="proPoint" class="flex flex-col gap-1 mt-3">
 							<label for="proPoint" class="form-label">Điểm chuyên nghiệp</label>
 							<Rating name="proPoint" v-model="review.proPoint" />
-							<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
-								$field.error?.message
-							}}</Message>
+							<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">
+								{{ $field.error?.message }}
+							</Message>
 						</FormField>
+
 						<FormField v-slot="$field" name="attitudePoint" class="flex flex-col gap-1">
 							<label for="attitudePoint" class="form-label">Điểm thái độ</label>
 							<Rating name="attitudePoint" v-model="review.attitudePoint" />
-							<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
-								$field.error?.message
-							}}</Message>
+							<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">
+								{{ $field.error?.message }}
+							</Message>
 						</FormField>
 					</template>
 
-					<!-- Fields for MC reviewing Client -->
+					<!-- MC-specific Fields -->
 					<template v-else>
 						<FormField v-slot="$field" name="paymentPunctualPoint" class="flex flex-col gap-1 mt-3">
 							<label for="paymentPunctualPoint" class="form-label">Điểm thanh toán đúng hạn</label>
 							<Rating name="paymentPunctualPoint" v-model="review.paymentPunctualPoint" />
-							<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
-								$field.error?.message
-							}}</Message>
+							<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">
+								{{ $field.error?.message }}
+							</Message>
 						</FormField>
 					</template>
 
+					<!-- Common Fields -->
 					<FormField v-slot="$field" name="reliablePoint" class="flex flex-col gap-1">
 						<label for="reliablePoint" class="form-label">Điểm tin cậy</label>
 						<Rating name="reliablePoint" v-model="review.reliablePoint" />
-						<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
-							$field.error?.message
-						}}</Message>
+						<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">
+							{{ $field.error?.message }}
+						</Message>
 					</FormField>
+
 					<FormField v-slot="$field" name="detailDescription" class="flex flex-col gap-1">
 						<label for="detailDescription" class="form-label">Mô tả chi tiết</label>
 						<TextArea name="detailDescription" v-model="review.detailDescription" />
-						<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
-							$field.error?.message
-						}}</Message>
+						<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">
+							{{ $field.error?.message }}
+						</Message>
 					</FormField>
+
 					<Button label="Gửi" class="save-button" type="submit" />
 				</div>
 			</Form>
@@ -91,37 +101,36 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { zodResolver } from "@primevue/forms/resolvers/zod";
+import { useToast } from "primevue/usetoast";
+import { z } from "zod";
+
+// API & Store imports
 import { contractApi } from "@/apis/contractApi";
 import { clientReviewMcApi } from "@/apis/clientReviewMcApi";
 import { mcReviewClientApi } from "@/apis/mcReviewClientApi";
-import { zodResolver } from "@primevue/forms/resolvers/zod";
-import { z } from "zod";
+import { notificationApi } from "@/apis/notificationApi";
+import { useAuthStore } from "@/stores/authStore";
+
+// Types & Enums
+import type { Contract } from "@/entities/contract";
 import type { ClientReviewMc } from "@/entities/clientReviewMc";
 import type { McReviewClient } from "@/entities/mcReviewClient";
-import { useToast } from "primevue/usetoast";
-import type { Contract } from "@/entities/contract";
-import { useAuthStore } from "@/stores/authStore";
 import { NotificationStatus } from "@/enums/notificationStatus";
-import { notificationApi } from "@/apis/notificationApi";
 
+//#region State Management
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const isMc = computed(() => authStore.user?.isMc == "true");
 
-/**
- * sang màn hình chi tiết hợp đồng
- */
-const viewContract = () => {
-	router.push({ name: "user-contract-detail", params: { id: contractId } });
-};
-
-//#region State
-const route = useRoute();
 const contractId = Number(route.params.contractId);
-const notificationId = Number(route.params.notificationId); // Receive notification ID
+const notificationId = Number(route.params.notificationId);
+const contract = ref<Contract>();
+
 const review = ref({
 	overallPoint: 5,
 	proPoint: 5,
@@ -133,9 +142,8 @@ const review = ref({
 });
 //#endregion
 
-//#region Form Resolver
+//#region Form Validation
 const reviewFormResolver = computed(() => {
-	// Base schema with common fields
 	const baseSchema = {
 		overallPoint: z.number().gte(1).lte(5),
 		reliablePoint: z.number().gte(1).lte(5),
@@ -165,8 +173,7 @@ const reviewFormResolver = computed(() => {
 });
 //#endregion
 
-//#region Fetch Contract
-const contract = ref<Contract>();
+//#region Data Loading
 const getContract = async (): Promise<Contract | null> => {
 	try {
 		const contract = await contractApi.getById(contractId);
@@ -178,68 +185,84 @@ const getContract = async (): Promise<Contract | null> => {
 };
 //#endregion
 
-//#region On Submit
+//#region Form Submission
 const onSubmit = async (formInfo: any) => {
 	const { valid, values } = formInfo;
-	if (valid) {
-		try {
-			if (isMc.value) {
-				// MC reviewing Client
-				const mcReview: McReviewClient = {
-					...values,
-					contractId: contractId,
-					mcId: authStore.user?.id,
-					clientId: contract.value?.clientId,
-				};
-				await mcReviewClientApi.create(mcReview);
-			} else {
-				// Client reviewing MC
-				const clientReview: ClientReviewMc = {
-					...values,
-					contractId: contractId,
-					clientId: authStore.user?.id,
-					mcId: contract.value?.mcId,
-				};
-				await clientReviewMcApi.create(clientReview);
-			}
+	if (!valid) return;
 
-			// Update notification status after successful review submission
-			try {
-				await notificationApi.update(notificationId, {
-					id: notificationId,
-					status: NotificationStatus.NotEditable,
-				});
-			} catch (error) {
-				console.error("Không thể cập nhật trạng thái thông báo", error);
-				toast.add({
-					severity: "error",
-					summary: "Cập nhật trạng thái thông báo thất bại",
-					detail: "Có lỗi khi cập nhật trạng thái thông báo",
-					life: 3000,
-				});
-			}
+	try {
+		await submitReview(values);
+		await updateNotificationStatus();
+		navigateBackAndShowSuccess();
+	} catch (error) {
+		console.error("Không thể gửi đánh giá", error);
+		showErrorToast("Có lỗi khi gửi đánh giá của bạn");
+	}
+};
 
-			router.push({ name: "user-notification-list" });
-			toast.add({
-				severity: "success",
-				summary: "Đã gửi đánh giá",
-				detail: "Đánh giá của bạn đã được gửi thành công",
-				life: 3000,
-			});
-		} catch (error) {
-			console.error("Không thể gửi đánh giá", error);
-			toast.add({
-				severity: "error",
-				summary: "Gửi đánh giá thất bại",
-				detail: "Có lỗi khi gửi đánh giá của bạn",
-				life: 3000,
-			});
-		}
+const submitReview = async (values: any) => {
+	if (isMc.value) {
+		const mcReview: McReviewClient = {
+			...values,
+			contractId: contractId,
+			mcId: authStore.user?.id,
+			clientId: contract.value?.clientId,
+		};
+		await mcReviewClientApi.create(mcReview);
+	} else {
+		const clientReview: ClientReviewMc = {
+			...values,
+			contractId: contractId,
+			clientId: authStore.user?.id,
+			mcId: contract.value?.mcId,
+		};
+		await clientReviewMcApi.create(clientReview);
+	}
+};
+
+const updateNotificationStatus = async () => {
+	try {
+		await notificationApi.update(notificationId, {
+			id: notificationId,
+			status: NotificationStatus.NotEditable,
+		});
+	} catch (error) {
+		console.error("Không thể cập nhật trạng thái thông báo", error);
+		showErrorToast("Có lỗi khi cập nhật trạng thái thông báo");
 	}
 };
 //#endregion
 
-//#region On Mounted
+//#region Navigation & UI
+const viewContract = () => {
+	router.push({ name: "user-contract-detail", params: { id: contractId } });
+};
+
+const navigateBackAndShowSuccess = () => {
+	router.push({ name: "user-notification-list" });
+	showSuccessToast();
+};
+
+const showSuccessToast = () => {
+	toast.add({
+		severity: "success",
+		summary: "Đã gửi đánh giá",
+		detail: "Đánh giá của bạn đã được gửi thành công",
+		life: 3000,
+	});
+};
+
+const showErrorToast = (message: string) => {
+	toast.add({
+		severity: "error",
+		summary: "Gửi đánh giá thất bại",
+		detail: message,
+		life: 3000,
+	});
+};
+//#endregion
+
+//#region Lifecycle Hooks
 onMounted(async () => {
 	contract.value = await getContract();
 });
@@ -264,13 +287,20 @@ onMounted(async () => {
 .event-info-container {
 	padding: 16px 16px 0;
 }
+
 .info-item {
 	display: flex;
 	align-items: center;
 	gap: 12px;
+
+	.value {
+		display: flex;
+		align-items: center;
+	}
 }
-.value {
-	display: flex;
-	align-items: center;
+
+.view-contract-button {
+	margin-top: 12px;
+	color: var(--primary-color);
 }
 </style>

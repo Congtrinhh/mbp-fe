@@ -275,42 +275,20 @@ import { useRouter } from "vue-router";
 import { useAppStore } from "@/stores/appStore";
 import useFormatter from "@/composables/useFormatter";
 
+//#region Constants and Variables
 const router = useRouter();
-
 const authStore = useAuthStore();
 const userId = authStore.user?.id || 0;
 const confirm = useConfirm();
-
 const postApi = BaseApi.getInstance<Post>("posts");
 const { getItem, setItem, removeItem } = useLocalStorage();
-
 const activeGroup = ref(PostGroup.Common);
 const { redirectToProfile } = useRedirect();
-
 const { formatCurrency } = useFormatter();
-
 const toast = useToast();
-
 const appStore = useAppStore();
 const appName = appStore.appName;
-/**
- * Form Configuration and Management
- *
- * Handles all aspects of post form functionality:
- * - Form validation using Zod schema
- * - Form state management
- * - Default values and templates
- * - Form submission handling
- * - Draft saving/loading
- *
- * created by tqcong 20/5/2025.
- */
 
-/**
- * Template for initializing new posts with default values
- * Ensures consistent post structure and required fields
- * created by tqcong 20/5/2025.
- */
 const defaultPost: Post = {
 	id: 0,
 	userId: 0,
@@ -322,19 +300,9 @@ const defaultPost: Post = {
 	mcRequirement: "",
 	priceFrom: 0,
 	priceTo: 0,
-	reactions: [], // Add missing reactions array
-	entityState: 0, // Add missing entity state
+	reactions: [],
+	entityState: 0,
 };
-
-const post = ref<Post>(cloneDeep(defaultPost));
-
-/**
- * This is necessary to ensure that the initial post state is independent and does not share
- * references with the default post object.
- *
- * @type {Ref<Post>} - A reactive reference to a post object.
- */
-const initialPost = ref<Post>(cloneDeep(defaultPost));
 
 const formResolver = zodResolver(
 	z
@@ -359,20 +327,88 @@ const formResolver = zodResolver(
 			},
 			{ message: "Thời gian kết thúc phải sau thời gian bắt đầu", path: ["eventEnd"] }
 		)
-	// .refine(
-	// 	(data) => {
-	// 		console.trace(data);
-	// 		if (data.priceFrom && data.priceTo) {
-	// 			return data.priceFrom < data.priceTo;
-	// 		}
-	// 		if (!data.priceFrom && !data.priceTo) return true;
-	// 		if (!data.priceFrom && data.priceTo) return false;
-	// 		if (data.priceFrom && !data.priceTo) return false;
-	// 	},
-	// 	{ message: "Mức cát-xê đến phải lớn hơn mức cát-xê từ", path: ["priceTo"] }
-	// )
 );
 
+const post = ref<Post>(cloneDeep(defaultPost));
+const initialPost = ref<Post>(cloneDeep(defaultPost));
+const posts = ref<Post[]>([]);
+const isLoading = ref(false);
+const isPostDialogVisible = ref(false);
+const editingMode = ref<EditingMode>(EditingMode.Create);
+const selectedPostId = ref<number>(0);
+//#endregion
+
+/**
+ * Form Configuration and Management
+ *
+ * Handles all aspects of post form functionality:
+ * - Form validation using Zod schema
+ * - Form state management
+ * - Default values and templates
+ * - Form submission handling
+ * - Draft saving/loading
+ *
+ * created by tqcong 20/5/2025.
+ */
+
+/**
+ * Template for initializing new posts with default values
+ * Ensures consistent post structure and required fields
+ * created by tqcong 20/5/2025.
+ */
+//#region Post List Management
+const pagedRequest = ref<PostPagedRequest>({
+	pageIndex: 0,
+	pageSize: 10,
+	isGetReaction: true,
+	isUseProc: true,
+	postGroup: activeGroup.value,
+});
+
+const clearPosts = () => {
+	posts.value = [];
+};
+
+const loadMorePosts = async () => {
+	if (isLoading.value) return;
+	isLoading.value = true;
+
+	pagedRequest.value.postGroup = activeGroup.value;
+	const pagedResponse = await postApi.getPaged(pagedRequest.value);
+
+	const newPosts = pagedResponse.items;
+	posts.value.push(...newPosts);
+
+	pagedRequest.value.pageIndex++;
+	isLoading.value = false;
+};
+
+const handleScroll = (event: any) => {
+	const bottom = event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight;
+	if (bottom) {
+		loadMorePosts();
+	}
+};
+
+const loadPosts = async () => {
+	clearPosts();
+	pagedRequest.value.pageIndex = 0;
+	await loadMorePosts();
+};
+
+watch(
+	() => activeGroup.value,
+	async () => {
+		await loadPosts();
+	}
+);
+
+onMounted(async () => {
+	await loadPosts();
+});
+//#endregion
+
+//#region Post Form Operations
 const onFormSubmit = async (formInfo: any) => {
 	const { valid, values } = formInfo;
 
@@ -382,23 +418,53 @@ const onFormSubmit = async (formInfo: any) => {
 		await savePost(values);
 	}
 };
+
+const savePost = async (post: Post) => {
+	if (editingMode.value == EditingMode.Update) {
+		post.id = selectedPostId.value;
+		await postApi.update(selectedPostId.value, post);
+		toast.add({
+			severity: "success",
+			summary: "Đã tạo bài viết",
+			detail: "Bài viết của bạn đã được cập nhật thành công",
+			life: 3000,
+		});
+	} else if (editingMode.value == EditingMode.Create) {
+		await postApi.create(post);
+		toast.add({
+			severity: "success",
+			summary: "Đã tạo bài viết",
+			detail: "Bài viết của bạn đã được tạo thành công",
+			life: 3000,
+		});
+	}
+
+	await closePostDialog(true);
+};
+
+async function handleEditPost() {
+	try {
+		const fetchedPost = await postApi.getById(selectedPostId.value);
+		post.value = fetchedPost;
+		initialPost.value = cloneDeep(fetchedPost);
+		openPostDialog(EditingMode.Update);
+	} catch (error) {
+		toast.add({ severity: "error", summary: "Edit Error", detail: "Failed to fetch post", life: 3000 });
+	}
+}
+
+async function handleDeletePost() {
+	try {
+		await postApi.delete(selectedPostId.value);
+		await loadPosts();
+		toast.add({ severity: "success", summary: "Delete", detail: "Successfully deleted post", life: 3000 });
+	} catch (error) {
+		toast.add({ severity: "error", summary: "Delete Error", detail: "Failed to delete post", life: 3000 });
+	}
+}
 //#endregion
 
-/**
- * Dialog Management System
- *
- * Handles the post creation/editing dialog:
- * - Dialog visibility state
- * - Edit/Create mode switching
- * - Draft management
- * - Unsaved changes protection
- * - Form state persistence
- *
- * created by tqcong 20/5/2025.
- */
-const isPostDialogVisible = ref(false);
-const editingMode = ref<EditingMode>(EditingMode.Create);
-
+//#region Dialog Management
 const openPostDialog = async (mode: EditingMode) => {
 	editingMode.value = mode;
 	isPostDialogVisible.value = true;
@@ -457,117 +523,26 @@ const closePostDialog = async (isSave: boolean = false) => {
 		}
 	}
 };
-//#endregion
 
-/**
- * Post CRUD Operations
- *
- * Manages all post-related operations:
- * - Creating new posts
- * - Updating existing posts
- * - Success/error notifications
- * - State updates after operations
- *
- * created by tqcong 20/5/2025.
- */
-
-/**
- * Saves or updates a post based on current editing mode
- *
- * @param {Post} post - The post data to be saved
- * @returns {Promise<void>}
- * created by tqcong 20/5/2025.
- */
-const savePost = async (post: Post) => {
-	if (editingMode.value == EditingMode.Update) {
-		post.id = selectedPostId.value;
-		await postApi.update(selectedPostId.value, post);
-		toast.add({
-			severity: "success",
-			summary: "Đã tạo bài viết",
-			detail: "Bài viết của bạn đã được cập nhật thành công",
-			life: 3000,
-		});
-	} else if (editingMode.value == EditingMode.Create) {
-		await postApi.create(post);
-		toast.add({
-			severity: "success",
-			summary: "Đã tạo bài viết",
-			detail: "Bài viết của bạn đã được tạo thành công",
-			life: 3000,
-		});
+const handleAfterShowDialog = async () => {
+	if (editingMode.value === EditingMode.Create) {
+		const draftPost = getItem("post");
+		if (draftPost) {
+			post.value = draftPost;
+			initialPost.value = cloneDeep(draftPost);
+		}
+	} else if (editingMode.value === EditingMode.Update) {
+		const postId = post.value.id;
+		const fetchedPost = await postApi.getById(postId);
+		post.value = fetchedPost;
+		initialPost.value = cloneDeep(fetchedPost);
 	}
-
-	await closePostDialog(true);
 };
 //#endregion
 
-/**
- * Post List Data Management
- *
- * Handles post list state and operations:
- * - Post data storage and updates
- * - Infinite scroll pagination
- * - Loading states
- * - Data clearing and refreshing
- * - Filtering and sorting
- *
- * created by tqcong 20/5/2025.
- */
-const posts = ref<Post[]>([]);
-
-const clearPosts = () => {
-	posts.value = [];
-};
-
-const isLoading = ref(false);
-
-const pagedRequest = ref<PostPagedRequest>({
-	pageIndex: 0,
-	pageSize: 10,
-	isGetReaction: true,
-	isUseProc: true,
-	postGroup: activeGroup.value,
-});
-
-const loadMorePosts = async () => {
-	if (isLoading.value) return;
-	isLoading.value = true;
-
-	pagedRequest.value.postGroup = activeGroup.value;
-	const pagedResponse = await postApi.getPaged(pagedRequest.value);
-
-	const newPosts = pagedResponse.items;
-	posts.value.push(...newPosts);
-
-	pagedRequest.value.pageIndex++;
-	isLoading.value = false;
-};
-
-/**
- * Infinite Scroll Handler
- *
- * Detects when user reaches bottom of post list and loads more posts
- *
- * @param {Event} event - Scroll event object
- * created by tqcong 20/5/2025.
- */
-const handleScroll = (event: any) => {
-	const bottom = event.target.scrollHeight - event.target.scrollTop === event.target.clientHeight;
-	if (bottom) {
-		loadMorePosts();
-	}
-};
-
-const loadPosts = async () => {
-	clearPosts();
-	pagedRequest.value.pageIndex = 0;
-	await loadMorePosts();
-};
-
-onMounted(async () => {
-	await loadPosts();
-});
+//#region Post Interactions
+const groups = getPostGroupDataSource();
+const reactionApi = BaseApi.getInstance<Reaction>("reactions");
 
 const getReactionInfo = (reactions: any[]) => {
 	if (reactions.length === 0) return "";
@@ -584,32 +559,8 @@ const getReactionInfo = (reactions: any[]) => {
 
 	return reactions[0].userName + " và " + (reactions.length - 1) + " người khác";
 };
-//#endregion
 
-/**
- * Post Filtering and Reaction System
- *
- * Manages post categories and user reactions:
- * - Post group filtering
- * - Like/unlike functionality
- * - Reaction count display
- * - User interaction tracking
- *
- * created by tqcong 20/5/2025.
- */
-const groups = getPostGroupDataSource();
-const reactionApi = BaseApi.getInstance<Reaction>("reactions");
-
-/**
- * Toggles the like status of a post for the current user.
- * If the post is already liked by the user, it removes the like.
- * If the post is not liked by the user, it adds a like.
- *
- * @param {Post} post - The post object to toggle the like status for.
- * @returns {Promise<void>} - A promise that resolves when the like status has been toggled.
- */
 const toggleLikePost = async (post: Post) => {
-	// is liked
 	const reaction = post.reactions.find((r: Reaction) => r.userId == userId);
 	if (reaction) {
 		post.reactions.splice(post.reactions.indexOf(reaction), 1);
@@ -629,109 +580,22 @@ const toggleLikePost = async (post: Post) => {
 	}
 };
 
-watch(
-	() => activeGroup.value,
-	async () => {
-		await loadPosts();
-	}
-);
-
-/**
- * Dialog Display Handler
- *
- * Manages dialog content when shown:
- * - Loads draft posts in create mode
- * - Fetches post data in edit mode
- * - Initializes form state
- *
- * created by tqcong 20/5/2025.
- */
-const handleAfterShowDialog = async () => {
-	if (editingMode.value === EditingMode.Create) {
-		const draftPost = getItem("post");
-		if (draftPost) {
-			post.value = draftPost;
-			initialPost.value = cloneDeep(draftPost);
-		}
-	} else if (editingMode.value === EditingMode.Update) {
-		const postId = post.value.id;
-		const fetchedPost = await postApi.getById(postId);
-		post.value = fetchedPost;
-		initialPost.value = cloneDeep(fetchedPost);
-	}
-};
-
-const handleLoginClick = () => {
-	router.push({ name: "user-login", query: { redirect: router.currentRoute.value.fullPath } });
-};
-
-/**
- * Post Menu Configuration
- *
- * Setup for post action menu (edit/delete):
- * - Menu items definition
- * - Selected post tracking
- * - Action handlers
- *
- * created by tqcong 20/5/2025.
- */
 import Menu from "primevue/menu";
 const postMenu = ref<InstanceType<typeof Menu> | null>(null);
-const selectedPostId = ref<number>(0);
 const postMenuItems = [
 	{ label: "Chỉnh sửa", icon: "pi pi-pencil", command: () => handleEditPost() },
 	{ label: "Xóa", icon: "pi pi-trash", command: () => handleDeletePost() },
 ];
 
-/**
- * Shows the post action menu at clicked position
- *
- * @param {Event} event - Click event that triggered menu
- * @param {number} postId - ID of post being acted upon
- * created by tqcong 20/5/2025.
- */
 function handleShowPostMenu(event: Event, postId: number) {
 	selectedPostId.value = postId;
-
 	postMenu.value?.toggle(event);
 }
 
-/**
- * Initiates post editing workflow
- *
- * Fetches full post data and opens edit dialog
- * Shows error toast if fetch fails
- *
- * created by tqcong 20/5/2025.
- */
-async function handleEditPost() {
-	try {
-		const fetchedPost = await postApi.getById(selectedPostId.value);
-		post.value = fetchedPost;
-		initialPost.value = cloneDeep(fetchedPost);
-		openPostDialog(EditingMode.Update);
-	} catch (error) {
-		toast.add({ severity: "error", summary: "Edit Error", detail: "Failed to fetch post", life: 3000 });
-	}
-}
-
-/**
- * Handles post deletion process
- *
- * Deletes post and refreshes list
- * Shows success/error notifications
- *
- * created by tqcong 20/5/2025.
- */
-async function handleDeletePost() {
-	try {
-		await postApi.delete(selectedPostId.value);
-		await loadPosts();
-		toast.add({ severity: "success", summary: "Delete", detail: "Successfully deleted post", life: 3000 });
-	} catch (error) {
-		toast.add({ severity: "error", summary: "Delete Error", detail: "Failed to delete post", life: 3000 });
-	}
-}
+const handleLoginClick = () => {
+	router.push({ name: "user-login", query: { redirect: router.currentRoute.value.fullPath } });
+};
+//#endregion
 </script>
 <style lang="scss" scoped>
 .main-container {

@@ -39,46 +39,21 @@ import { ref, onMounted, onUnmounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
 
+//#region Props & Emits
 const emit = defineEmits<{
 	(e: "photo-captured", data: string): void;
 	(e: "back"): void;
 }>();
+//#endregion
 
+//#region State
 const toast = useToast();
 const videoElement = ref<HTMLVideoElement | null>(null);
 const capturedImage = ref<string | null>(null);
 let stream: MediaStream | null = null;
+//#endregion
 
-const loadDefaultImage = async () => {
-	try {
-		const response = await fetch("/features/id-verification/docs/img/face.jpg");
-		const blob = await response.blob();
-		const reader = new FileReader();
-
-		reader.onloadend = () => {
-			if (typeof reader.result === "string") {
-				capturedImage.value = reader.result;
-				toast.add({
-					severity: "info",
-					summary: "Thông báo",
-					detail: "Đã tải ảnh mặc định do camera không khả dụng",
-					life: 3000,
-				});
-			}
-		};
-
-		reader.readAsDataURL(blob);
-	} catch (error) {
-		console.error("Error loading default image:", error);
-		toast.add({
-			severity: "error",
-			summary: "Lỗi",
-			detail: "Không thể tải ảnh mặc định",
-			life: 3000,
-		});
-	}
-};
-
+//#region Camera Management
 const startCamera = async () => {
 	try {
 		// Attempt to access the camera with specific constraints
@@ -125,6 +100,38 @@ const stopCamera = () => {
 		videoElement.value.srcObject = null;
 	}
 };
+//#endregion
+
+//#region Image Handling
+const loadDefaultImage = async () => {
+	try {
+		const response = await fetch("/features/id-verification/docs/img/face.jpg");
+		const blob = await response.blob();
+		const reader = new FileReader();
+
+		reader.onloadend = () => {
+			if (typeof reader.result === "string") {
+				capturedImage.value = reader.result;
+				toast.add({
+					severity: "info",
+					summary: "Thông báo",
+					detail: "Đã tải ảnh mặc định do camera không khả dụng",
+					life: 3000,
+				});
+			}
+		};
+
+		reader.readAsDataURL(blob);
+	} catch (error) {
+		console.error("Error loading default image:", error);
+		toast.add({
+			severity: "error",
+			summary: "Lỗi",
+			detail: "Không thể tải ảnh mặc định",
+			life: 3000,
+		});
+	}
+};
 
 const capturePhoto = () => {
 	if (!videoElement.value) {
@@ -156,7 +163,9 @@ const capturePhoto = () => {
 	capturedImage.value = canvas.toDataURL("image/jpeg");
 	stopCamera();
 };
+//#endregion
 
+//#region Event Handlers
 const retakePhoto = () => {
 	capturedImage.value = null;
 	startCamera();
@@ -168,7 +177,9 @@ const confirmPhoto = () => {
 		emit("photo-captured", base64Data);
 	}
 };
+//#endregion
 
+//#region Lifecycle Hooks
 onMounted(() => {
 	startCamera();
 });
@@ -176,6 +187,7 @@ onMounted(() => {
 onUnmounted(() => {
 	stopCamera();
 });
+//#endregion
 </script>
 
 <style scoped>
