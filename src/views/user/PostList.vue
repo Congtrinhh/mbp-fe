@@ -132,10 +132,10 @@
 							<span class="text">Thích</span>
 						</div>
 						<!-- nút nhắn tin -->
-						<!-- <div class="reaction-button chat-button">
+						<div class="reaction-button chat-button">
 							<i class="icon pi pi-comment"></i>
 							<span class="text">Nhắn tin</span>
-						</div> -->
+						</div>
 					</div>
 				</template>
 			</Card>
@@ -274,6 +274,7 @@ import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
 import { useAppStore } from "@/stores/appStore";
 import useFormatter from "@/composables/useFormatter";
+import type Menu from "primevue/menu";
 
 //#region Constants and Variables
 const router = useRouter();
@@ -580,7 +581,6 @@ const toggleLikePost = async (post: Post) => {
 	}
 };
 
-import Menu from "primevue/menu";
 const postMenu = ref<InstanceType<typeof Menu> | null>(null);
 const postMenuItems = [
 	{ label: "Chỉnh sửa", icon: "pi pi-pencil", command: () => handleEditPost() },

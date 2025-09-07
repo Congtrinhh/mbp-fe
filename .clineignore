@@ -35,3 +35,5 @@ _.xlsx
 # Roo
 
 \*\*/.roo
+/features/
+/prompting/
