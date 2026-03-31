@@ -17,24 +17,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-
-    - name: Build
-      run: |
-        npm install
-        npm run build
-
     - name: Login to Docker Hub
       uses: docker/login-action@v4
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
         
-    - name: Build and push
+    - name: Build Docker Image and push to Docker registy
       uses: docker/build-push-action@v7
       with:
-        push: true
+        push: ${{ github.event_name == 'push' }}
         tags: ${{ secrets.DOCKERHUB_TAGNAME  }}
